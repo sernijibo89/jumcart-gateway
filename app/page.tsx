@@ -417,7 +417,7 @@ export default function Page() {
 
   // Keys State
   const [keys, setKeys] = useState([
-    { id: 'k1', name: 'Production Gateway Key', env: 'live', value: 'jm_live_sk_' + hex(32), created: 'Nov 03, 2026', shown: false },
+    { id: 'k1', name: 'Production Ingestion Key', env: 'live', value: 'jm_live_sk_' + hex(32), created: 'Nov 03, 2026', shown: false },
     { id: 'k2', name: 'Staging Ingestion Key', env: 'test', value: 'jm_test_sk_' + hex(32), created: 'Oct 28, 2026', shown: false }
   ]);
   const [settings] = useState({ max: 5, base: 2, mult: 2, jitter: true });
@@ -1445,7 +1445,7 @@ export default function Page() {
             key={t.id}
             className="pointer-events-auto bg-[#141a22] border border-[#2a3340] shadow-2xl px-4 py-2.5 rounded-lg text-xs font-medium flex items-center gap-2"
           >
-            <span className={t.kind === 'ok' ? 'text-[#3ecf8e]' : t.kind === 'bad' ? 'text-[#ff6370]' : 'text-[#8ea3ff]'}>●</span>
+            <span className={t.kind === 'ok' ? 'text-[#3ecf8e]' : 'text-[#ff6370]'}>●</span>
             <span>{t.msg}</span>
           </div>
         ))}
@@ -1459,14 +1459,10 @@ export default function Page() {
               <div className="w-6 h-6 rounded bg-[#8ea3ff] text-[#0a0d18] font-bold grid place-items-center text-xs">J</div>
               <span className="text-sm font-bold text-[#e8ecf1]">JumcartFlow</span>
             </div>
-            <p className="text-[12px] text-[#5d6877] max-w-sm leading-relaxed">
-              Autonomous self-healing webhook gateway and zero-drop ingestion buffer. Eliminating lost revenue and dropped integrations across African and global payment rails.
-            </p>
             <div className="space-y-1 font-mono text-[11px] text-[#5d6877] pt-1">
               <div>Managed by <strong className="text-[#8d98a7]">P. Gonze Consultancy</strong></div>
-              <div>Entity: JUNT BUSINESS SUPPORT SERVICES LTD (RC-7892104)</div>
-              <div>Operational Base: Abuja & Kano, Nigeria</div>
-              <div>Direct Inquiries: <a href="mailto:enquiries@jumcart.com" className="text-[#8ea3ff] hover:underline">enquiries@jumcart.com</a></div>
+              <div>Address: Abuja, Nigeria</div>
+              <div>Email: <a href="mailto:enquiries@jumcart.com" className="text-[#8ea3ff] hover:underline">enquiries@jumcart.com</a></div>
             </div>
           </div>
 
