@@ -31,6 +31,12 @@ function Icon({ name, size = 16, className = '' }: { name: string; size?: number
         <circle cx="12" cy="12" r="3" />
       </>
     ),
+    Bell: (
+      <>
+        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+      </>
+    ),
     FlaskConical: (
       <>
         <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
@@ -113,8 +119,8 @@ function Icon({ name, size = 16, className = '' }: { name: string; size?: number
     ),
     Timer: (
       <>
-        <line x1="10" x2="14" y1="2" y2="2" />
-        <line x1="12" x2="15" y1="14" y2="11" />
+        <line x1="10" y1="2" x2="14" y2="2" />
+        <line x1="12" y1="14" x2="15" y2="11" />
         <circle cx="12" cy="14" r="8" />
       </>
     ),
@@ -185,15 +191,14 @@ const ago = (ts: number, now: number) => {
 };
 const host = (u: string) => u.replace(/^https?:\/\//, '');
 
-// Comprehensive Regional & Global Gateways
-const PROV: Record<string, { name: string; letter: string; color: string }> = {
-  paystack: { name: 'Paystack', letter: 'P', color: '#4db8f0' },
-  nomba: { name: 'Nomba', letter: 'N', color: '#ffb703' },
-  flutterwave: { name: 'Flutterwave', letter: 'F', color: '#fb923c' },
-  monnify: { name: 'Monnify', letter: 'M', color: '#ff9366' },
-  opay: { name: 'OPay', letter: 'O', color: '#10b981' },
-  stripe: { name: 'Stripe', letter: 'S', color: '#a597ff' },
-  shopify: { name: 'Shopify', letter: 'H', color: '#a9cf72' }
+const PROV: Record<string, { name: string; letter: string; color: string; sampleIps: string }> = {
+  paystack: { name: 'Paystack', letter: 'P', color: '#4db8f0', sampleIps: '52.31.139.75, 52.49.173.169' },
+  nomba: { name: 'Nomba', letter: 'N', color: '#ffb703', sampleIps: '34.248.10.82, 34.249.20.11' },
+  flutterwave: { name: 'Flutterwave', letter: 'F', color: '#fb923c', sampleIps: '54.75.161.64, 34.250.211.45' },
+  monnify: { name: 'Monnify', letter: 'M', color: '#ff9366', sampleIps: '35.189.67.90' },
+  opay: { name: 'OPay', letter: 'O', color: '#10b981', sampleIps: '18.130.40.11' },
+  stripe: { name: 'Stripe', letter: 'S', color: '#a597ff', sampleIps: '3.18.12.63, 3.130.192.212' },
+  shopify: { name: 'Shopify', letter: 'H', color: '#a9cf72', sampleIps: '23.227.38.0/24' }
 };
 
 const CLS_BY_PROV: Record<string, string> = {
@@ -298,13 +303,13 @@ const SANDBOX_TEMPLATES: Record<string, any> = {
 };
 
 const EP_SEED = [
-  { id: 'ep1', name: 'Paystack Ingestion Gateway', provider: 'paystack', dest: 'https://api.myapp.com/webhooks/paystack', proxy: 'gonze_live_839201', active: true },
-  { id: 'ep2', name: 'Nomba Merchant Stream', provider: 'nomba', dest: 'https://api.myapp.com/webhooks/nomba', proxy: 'gonze_live_612984', active: true },
-  { id: 'ep3', name: 'Flutterwave Ingestion Relay', provider: 'flutterwave', dest: 'https://api.myapp.com/webhooks/flw', proxy: 'gonze_live_551029', active: true },
-  { id: 'ep4', name: 'Monnify Direct Transfer', provider: 'monnify', dest: 'https://billing.northwind.ng/hooks/monnify', proxy: 'gonze_live_702144', active: true },
-  { id: 'ep5', name: 'OPay Virtual Accounts', provider: 'opay', dest: 'https://api.myapp.com/webhooks/opay', proxy: 'gonze_live_229104', active: true },
-  { id: 'ep6', name: 'Shopify Store Checkout', provider: 'shopify', dest: 'https://orders.kola-store.com/api/shopify/hooks', proxy: 'gonze_live_451907', active: true },
-  { id: 'ep7', name: 'Stripe Subscriptions', provider: 'stripe', dest: 'https://api.myapp.com/webhooks/stripe', proxy: 'gonze_live_118563', active: true }
+  { id: 'ep1', name: 'Paystack Ingestion Gateway', provider: 'paystack', dest: 'https://api.myapp.com/webhooks/paystack', proxy: 'gonze_live_839201', active: true, secret: 'sk_live_99a8b1...', verifyHmac: true, ipWhitelist: true, customHeader: 'Authorization: Bearer sec_991823' },
+  { id: 'ep2', name: 'Nomba Merchant Stream', provider: 'nomba', dest: 'https://api.myapp.com/webhooks/nomba', proxy: 'gonze_live_612984', active: true, secret: 'nmb_sec_4412...', verifyHmac: true, ipWhitelist: true, customHeader: 'x-tenant-id: org_alpha_01' },
+  { id: 'ep3', name: 'Flutterwave Ingestion Relay', provider: 'flutterwave', dest: 'https://api.myapp.com/webhooks/flw', proxy: 'gonze_live_551029', active: true, secret: 'flw_sec_8819...', verifyHmac: true, ipWhitelist: false, customHeader: '' },
+  { id: 'ep4', name: 'Monnify Direct Transfer', provider: 'monnify', dest: 'https://billing.northwind.ng/hooks/monnify', proxy: 'gonze_live_702144', active: true, secret: 'mnf_sec_3192...', verifyHmac: true, ipWhitelist: true, customHeader: '' },
+  { id: 'ep5', name: 'OPay Virtual Accounts', provider: 'opay', dest: 'https://api.myapp.com/webhooks/opay', proxy: 'gonze_live_229104', active: true, secret: 'opay_sec_551...', verifyHmac: false, ipWhitelist: false, customHeader: '' },
+  { id: 'ep6', name: 'Shopify Store Checkout', provider: 'shopify', dest: 'https://orders.kola-store.com/api/shopify/hooks', proxy: 'gonze_live_451907', active: true, secret: 'shpss_99120...', verifyHmac: true, ipWhitelist: true, customHeader: '' },
+  { id: 'ep7', name: 'Stripe Subscriptions', provider: 'stripe', dest: 'https://api.myapp.com/webhooks/stripe', proxy: 'gonze_live_118563', active: true, secret: 'whsec_99182...', verifyHmac: true, ipWhitelist: true, customHeader: 'x-forward-auth: live_edge' }
 ];
 
 function seedEvents() {
@@ -332,7 +337,8 @@ function seedEvents() {
         'content-type': 'application/json',
         'host': 'gateway.jumcart.com',
         'x-jumcart-endpoint': ep.proxy,
-        'x-jumcart-signature-verified': 'true'
+        'x-jumcart-signature-verified': ep.verifyHmac ? 'true' : 'bypassed',
+        'x-jumcart-ip-whitelisted': ep.ipWhitelist ? 'verified' : 'open'
       },
       body: {
         event: 'charge.success',
@@ -351,13 +357,16 @@ function seedEvents() {
 }
 
 export default function Page() {
-  const [tab, setTab] = useState<'stream' | 'sandbox' | 'endpoints' | 'healing' | 'replay' | 'keys'>('stream');
+  const [tab, setTab] = useState<'stream' | 'sandbox' | 'endpoints' | 'healing' | 'replay' | 'alerts' | 'keys'>('stream');
   const [endpoints, setEndpoints] = useState(EP_SEED);
   const [events, setEvents] = useState<any[]>(seedEvents);
   const [live, setLive] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const [toasts, setToasts] = useState<any[]>([]);
+
+  // Multi-Tenant Workspace State
+  const [workspace, setWorkspace] = useState('Production (Main)');
 
   // Legal Modal State
   const [activeModal, setActiveModal] = useState<'privacy' | 'terms' | 'sla' | null>(null);
@@ -373,10 +382,23 @@ export default function Page() {
   const [sbTargetProxy, setSbTargetProxy] = useState('gonze_live_839201');
   const [sbSending, setSbSending] = useState(false);
 
-  // Endpoints Generator
+  // Endpoints Generator State
   const [genUrl, setGenUrl] = useState('https://api.myapp.com/webhooks/payment');
   const [genProv, setGenProv] = useState('paystack');
+  const [genSecret, setGenSecret] = useState('whsec_live_9981249...');
+  const [genCustomHeader, setGenCustomHeader] = useState('Authorization: Bearer sec_token_live');
+  const [genWhitelist, setGenWhitelist] = useState(true);
   const [activeProxy, setActiveProxy] = useState(EP_SEED[0]);
+
+  // Instant Failure Alert Channels State
+  const [alertChannels, setAlertChannels] = useState({
+    slackWebhook: 'https://hooks.slack.com/services/T00/B00/X00EXAMPLE',
+    telegramChatId: '1092849182',
+    whatsappPhone: '+2348000000000',
+    notifyOn5xx: true,
+    notifyOnSchemaBreak: true,
+    notifyOnReplayFailure: true
+  });
 
   // Self Healing State
   const [diags, setDiags] = useState<Record<string, any>>({
@@ -393,9 +415,9 @@ export default function Page() {
   ]);
   const cancelReplay = useRef(false);
 
-  // Settings
+  // Keys State
   const [keys, setKeys] = useState([
-    { id: 'k1', name: 'Production Ingestion Key', env: 'live', value: 'jm_live_sk_' + hex(32), created: 'Nov 03, 2026', shown: false },
+    { id: 'k1', name: 'Production Gateway Key', env: 'live', value: 'jm_live_sk_' + hex(32), created: 'Nov 03, 2026', shown: false },
     { id: 'k2', name: 'Staging Ingestion Key', env: 'test', value: 'jm_test_sk_' + hex(32), created: 'Oct 28, 2026', shown: false }
   ]);
   const [settings] = useState({ max: 5, base: 2, mult: 2, jitter: true });
@@ -436,7 +458,13 @@ export default function Page() {
         status: isHealed ? 'healed' : isFail ? 'failed' : 'ok',
         latency: rnd(18, 42),
         cls: isFail || isHealed ? cls : null,
-        headers: { 'content-type': 'application/json', host: 'gateway.jumcart.com', 'x-jumcart-endpoint': ep.proxy },
+        headers: {
+          'content-type': 'application/json',
+          'host': 'gateway.jumcart.com',
+          'x-jumcart-endpoint': ep.proxy,
+          'x-jumcart-signature-verified': ep.verifyHmac ? 'true' : 'bypassed',
+          'x-jumcart-ip-whitelisted': ep.ipWhitelist ? 'verified' : 'open'
+        },
         body: { event: 'charge.success', data: { id: 'tx_' + hex(8), amount: amt, currency: 'NGN' } },
         resp: { code: isFail && !isHealed ? 422 : 200, body: isFail && !isHealed ? { error: 'schema_error' } : { status: 'success' } },
         attempts: [{ n: 1, code: isFail && !isHealed ? 422 : 200, text: isFail && !isHealed ? 'Unprocessable' : 'OK', ms: rnd(18, 35), ok: !isFail || isHealed }]
@@ -448,17 +476,13 @@ export default function Page() {
     return () => clearInterval(interval);
   }, [live, endpoints, diags]);
 
-  /* ---------- Fully Dynamic Live Metrics ---------- */
+  /* Dynamic Live Metrics */
   const dynamicMetrics = useMemo(() => {
     const totalCount = events.length;
     const failedCount = events.filter((e) => e.status === 'failed').length;
     const okCount = events.filter((e) => e.status === 'ok' || e.status === 'healed').length;
     const rate = totalCount > 0 ? (okCount / totalCount) * 100 : 100;
-    
-    // Total revenue recovered from healed payloads
     const revSaved = events.filter((e) => e.status === 'healed').reduce((sum, e) => sum + (e.usd || 0), 0);
-
-    // Dynamic latency average
     const totalLat = events.reduce((sum, e) => sum + (e.latency || 24), 0);
     const avgLat = totalCount > 0 ? Math.round(totalLat / totalCount) : 24;
 
@@ -529,7 +553,11 @@ export default function Page() {
         status: 'ok',
         latency: rnd(22, 45),
         cls: null,
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          'x-jumcart-signature-verified': 'true',
+          'x-jumcart-ip-whitelisted': 'verified'
+        },
         body: parsed,
         resp: { code: 200, body: { status: 'success' } },
         attempts: [{ n: 1, code: 200, text: 'OK', ms: 24, ok: true }]
@@ -555,11 +583,15 @@ export default function Page() {
       provider: genProv,
       dest: genUrl,
       proxy: 'gonze_live_' + digits(6),
-      active: true
+      active: true,
+      secret: genSecret,
+      verifyHmac: true,
+      ipWhitelist: genWhitelist,
+      customHeader: genCustomHeader
     };
     setEndpoints((prev) => [newEp, ...prev]);
     setActiveProxy(newEp);
-    toast('Proxy generated successfully.', 'ok');
+    toast('Proxy generated with signature verification and IP whitelisting.', 'ok');
   };
 
   // Approve AI Patch
@@ -640,12 +672,27 @@ export default function Page() {
               </div>
               <span className="font-bold text-lg tracking-tight">JumcartFlow</span>
               <span className="font-mono text-[11px] text-[#8d98a7] border border-[#2a3340] rounded px-1.5 py-0.5">
-                Autonomous Gateway
+                by P. Gonze
               </span>
-              <span className="text-xs text-[#8d98a7] hidden md:inline font-mono">
-                The Self-Healing Webhook Gateway & API Proxy
-              </span>
+
+              {/* Workspace Switcher */}
+              <div className="hidden sm:flex items-center gap-1.5 bg-[#141a22] border border-[#2a3340] rounded px-2.5 py-1 text-xs text-[#8d98a7]">
+                <span className="text-[#5d6877]">Workspace:</span>
+                <select
+                  value={workspace}
+                  onChange={(e) => {
+                    setWorkspace(e.target.value);
+                    toast(`Switched workspace to ${e.target.value}`, 'info');
+                  }}
+                  className="bg-transparent text-[#e8ecf1] font-medium outline-none cursor-pointer"
+                >
+                  <option value="Production (Main)" className="bg-[#0e1116]">Production (Main)</option>
+                  <option value="Staging Testnet" className="bg-[#0e1116]">Staging Testnet</option>
+                  <option value="Client: FinTech Relay" className="bg-[#0e1116]">Client: FinTech Relay</option>
+                </select>
+              </div>
             </div>
+
             <div className="inline-flex items-center gap-2 font-mono text-xs text-[#3ecf8e] bg-[#3ecf8e]/10 border border-[#3ecf8e]/25 rounded px-2.5 py-1">
               <span className="w-2 h-2 rounded-full bg-[#3ecf8e] animate-pulse" />
               Network: 99.99% Operational
@@ -660,6 +707,7 @@ export default function Page() {
               { id: 'endpoints', label: 'Endpoints & Proxies', icon: 'Webhook' },
               { id: 'healing', label: 'Self-Healing AI Logs', icon: 'Sparkles', count: dynamicMetrics.failedCount },
               { id: 'replay', label: 'Replay Engine', icon: 'RotateCcw' },
+              { id: 'alerts', label: 'Alerts & Dispatchers', icon: 'Bell' },
               { id: 'keys', label: 'Settings & API Keys', icon: 'Settings' }
             ].map((t) => (
               <button
@@ -805,14 +853,14 @@ export default function Page() {
               </span>
             </div>
 
-            {/* Events Stream Table */}
+            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-[#1c232d] bg-[#0e1116] font-mono text-[11px] text-[#5d6877] uppercase">
                     <th className="py-2.5 px-3.5">Status</th>
                     <th className="py-2.5 px-3.5">Event Type</th>
-                    <th className="py-2.5 px-3.5">Gateway Provider</th>
+                    <th className="py-2.5 px-3.5">Gateway</th>
                     <th className="py-2.5 px-3.5">Destination URL</th>
                     <th className="py-2.5 px-3.5 text-right">Latency</th>
                     <th className="py-2.5 px-3.5">Timestamp</th>
@@ -950,7 +998,7 @@ export default function Page() {
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
               <div>
                 <h2 className="font-bold text-base">Drop-In Proxy Generator</h2>
-                <p className="text-xs text-[#8d98a7] mt-1">Route payment webhooks through Jumcart for automated buffering & repair.</p>
+                <p className="text-xs text-[#8d98a7] mt-1">Configure signature verification, IP filters, and custom forwarding headers.</p>
               </div>
 
               <form onSubmit={handleGenerateEndpoint} className="space-y-3">
@@ -975,11 +1023,42 @@ export default function Page() {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className="text-xs text-[#8d98a7] block mb-1">Provider Webhook Secret (HMAC Check)</label>
+                  <input
+                    type="password"
+                    value={genSecret}
+                    onChange={(e) => setGenSecret(e.target.value)}
+                    className="w-full bg-[#090b0f] border border-[#2a3340] rounded px-3 py-2 text-xs font-mono text-[#e8ecf1]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-[#8d98a7] block mb-1">Custom Downstream Header</label>
+                  <input
+                    type="text"
+                    value={genCustomHeader}
+                    onChange={(e) => setGenCustomHeader(e.target.value)}
+                    placeholder="Authorization: Bearer my_token"
+                    className="w-full bg-[#090b0f] border border-[#2a3340] rounded px-3 py-2 text-xs font-mono text-[#e8ecf1]"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="gen-wl"
+                    checked={genWhitelist}
+                    onChange={(e) => setGenWhitelist(e.target.checked)}
+                    className="accent-[#8ea3ff]"
+                  />
+                  <label htmlFor="gen-wl" className="text-xs text-[#e8ecf1] cursor-pointer">
+                    Enforce Provider Static IP Whitelist
+                  </label>
+                </div>
                 <button
                   type="submit"
                   className="bg-[#8ea3ff] text-[#0a0d18] text-xs font-semibold px-4 py-2 rounded inline-flex items-center gap-1.5 hover:bg-[#a5b6ff] transition"
                 >
-                  <Icon name="Zap" size={13} /> Generate Proxy URL
+                  <Icon name="Zap" size={13} /> Generate Protected Proxy
                 </button>
               </form>
 
@@ -1003,27 +1082,41 @@ export default function Page() {
 
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="font-bold text-base">Active Gateways ({endpoints.length})</h2>
+                <h2 className="font-bold text-base">Active Gateways & Edge Protections ({endpoints.length})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs font-mono">
                   <thead>
                     <tr className="border-b border-[#1c232d] text-[#5d6877] uppercase text-[11px]">
                       <th className="py-2 px-3">Gateway</th>
-                      <th className="py-2 px-3">Proxy Inbound</th>
+                      <th className="py-2 px-3">Security Controls</th>
+                      <th className="py-2 px-3">Inbound Route</th>
                       <th className="py-2 px-3">Target</th>
-                      <th className="py-2 px-3">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#1c232d]">
                     {endpoints.map((ep) => (
                       <tr key={ep.id}>
-                        <td className="py-2.5 px-3 font-sans font-semibold text-[#e8ecf1]">{ep.name}</td>
-                        <td className="py-2.5 px-3 text-[#8ea3ff]">{ep.proxy}</td>
-                        <td className="py-2.5 px-3 text-[#8d98a7] max-w-[200px] truncate">{ep.dest}</td>
-                        <td className="py-2.5 px-3">
-                          <span className="text-[#3ecf8e] bg-[#3ecf8e]/10 px-2 py-0.5 rounded font-sans text-xs">Active</span>
+                        <td className="py-2.5 px-3 font-sans font-semibold text-[#e8ecf1]">
+                          <div>{ep.name}</div>
+                          {ep.customHeader && (
+                            <div className="text-[10px] text-[#5d6877] font-mono mt-0.5">{ep.customHeader}</div>
+                          )}
                         </td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex flex-col gap-1">
+                            <span className={`inline-flex items-center gap-1 text-[10px] ${ep.verifyHmac ? 'text-[#3ecf8e]' : 'text-[#8d98a7]'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${ep.verifyHmac ? 'bg-[#3ecf8e]' : 'bg-[#5d6877]'}`} />
+                              {ep.verifyHmac ? 'HMAC Verified' : 'No Secret'}
+                            </span>
+                            <span className={`inline-flex items-center gap-1 text-[10px] ${ep.ipWhitelist ? 'text-[#8ea3ff]' : 'text-[#8d98a7]'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${ep.ipWhitelist ? 'bg-[#8ea3ff]' : 'bg-[#5d6877]'}`} />
+                              {ep.ipWhitelist ? 'IP Guard On' : 'Open IP'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-[#8ea3ff]">{ep.proxy}</td>
+                        <td className="py-2.5 px-3 text-[#8d98a7] max-w-[180px] truncate">{ep.dest}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1187,7 +1280,79 @@ export default function Page() {
           </div>
         )}
 
-        {/* TAB 6: SETTINGS & KEYS */}
+        {/* TAB 6: ALERTS & DISPATCHERS */}
+        {tab === 'alerts' && (
+          <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-5">
+            <div>
+              <h2 className="font-bold text-base">Instant Incident Alerts & Dispatchers</h2>
+              <p className="text-xs text-[#8d98a7] mt-1">Receive automated alerts when transactions drop into the Dead-Letter Queue.</p>
+            </div>
+
+            <div className="grid gap-4 max-w-2xl">
+              <div>
+                <label className="text-xs text-[#8d98a7] block mb-1">Slack Incoming Webhook URL</label>
+                <input
+                  type="text"
+                  value={alertChannels.slackWebhook}
+                  onChange={(e) => setAlertChannels({ ...alertChannels, slackWebhook: e.target.value })}
+                  className="w-full bg-[#090b0f] border border-[#2a3340] rounded px-3 py-2 text-xs font-mono text-[#e8ecf1]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#8d98a7] block mb-1">Telegram Incident Bot Chat ID</label>
+                <input
+                  type="text"
+                  value={alertChannels.telegramChatId}
+                  onChange={(e) => setAlertChannels({ ...alertChannels, telegramChatId: e.target.value })}
+                  className="w-full bg-[#090b0f] border border-[#2a3340] rounded px-3 py-2 text-xs font-mono text-[#e8ecf1]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#8d98a7] block mb-1">WhatsApp Cloud API (Alert Phone Number)</label>
+                <input
+                  type="text"
+                  value={alertChannels.whatsappPhone}
+                  onChange={(e) => setAlertChannels({ ...alertChannels, whatsappPhone: e.target.value })}
+                  className="w-full bg-[#090b0f] border border-[#2a3340] rounded px-3 py-2 text-xs font-mono text-[#e8ecf1]"
+                />
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <label className="flex items-center gap-2 text-xs text-[#e8ecf1] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={alertChannels.notifyOn5xx}
+                    onChange={(e) => setAlertChannels({ ...alertChannels, notifyOn5xx: e.target.checked })}
+                    className="accent-[#8ea3ff]"
+                  />
+                  Alert on 5xx Server Outages and Upstream Gateway Timeouts
+                </label>
+                <label className="flex items-center gap-2 text-xs text-[#e8ecf1] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={alertChannels.notifyOnSchemaBreak}
+                    onChange={(e) => setAlertChannels({ ...alertChannels, notifyOnSchemaBreak: e.target.checked })}
+                    className="accent-[#8ea3ff]"
+                  />
+                  Alert on 422 Payload Schema Drift Detection
+                </label>
+              </div>
+
+              <div>
+                <button
+                  onClick={() => toast('Alert channels successfully updated and verified.', 'ok')}
+                  className="bg-[#8ea3ff] text-[#0a0d18] text-xs font-semibold px-4 py-2 rounded hover:bg-[#a5b6ff] transition"
+                >
+                  Save Dispatch Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: SETTINGS & KEYS */}
         {tab === 'keys' && (
           <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-5">
             <h2 className="font-bold text-base">API Authentication & Ingestion Keys</h2>
@@ -1242,6 +1407,21 @@ export default function Page() {
                 <Icon name="X" size={18} />
               </button>
             </div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-mono uppercase text-[#5d6877]">Edge Ingestion Security</div>
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                <div className="p-2.5 bg-[#090b0f] border border-[#1c232d] rounded">
+                  <div className="text-[#5d6877] text-[10px]">HMAC Signature</div>
+                  <div className="text-[#3ecf8e] mt-0.5">Verified at Edge</div>
+                </div>
+                <div className="p-2.5 bg-[#090b0f] border border-[#1c232d] rounded">
+                  <div className="text-[#5d6877] text-[10px]">Origin IP Check</div>
+                  <div className="text-[#8ea3ff] mt-0.5">Subnet Whitelisted</div>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <div className="text-xs font-mono uppercase text-[#5d6877]">Payload Body</div>
               <pre className="p-3 bg-[#090b0f] border border-[#1c232d] rounded text-xs font-mono overflow-x-auto text-[#8ea3ff]">
@@ -1265,13 +1445,13 @@ export default function Page() {
             key={t.id}
             className="pointer-events-auto bg-[#141a22] border border-[#2a3340] shadow-2xl px-4 py-2.5 rounded-lg text-xs font-medium flex items-center gap-2"
           >
-            <span className={t.kind === 'ok' ? 'text-[#3ecf8e]' : 'text-[#ff6370]'}>●</span>
+            <span className={t.kind === 'ok' ? 'text-[#3ecf8e]' : t.kind === 'bad' ? 'text-[#ff6370]' : 'text-[#8ea3ff]'}>●</span>
             <span>{t.msg}</span>
           </div>
         ))}
       </div>
 
-      {/* Professional 4-Column Legal Footer */}
+      {/* Corporate Multi-Column Legal Footer */}
       <footer className="border-t border-[#1c232d] bg-[#07090c] mt-16 text-xs text-[#8d98a7]">
         <div className="max-w-[1320px] mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-5 gap-8">
           <div className="md:col-span-2 space-y-3">
@@ -1282,8 +1462,11 @@ export default function Page() {
             <p className="text-[12px] text-[#5d6877] max-w-sm leading-relaxed">
               Autonomous self-healing webhook gateway and zero-drop ingestion buffer. Eliminating lost revenue and dropped integrations across African and global payment rails.
             </p>
-            <div className="font-mono text-[11px] text-[#5d6877]">
-              Operated by JumcartFlow
+            <div className="space-y-1 font-mono text-[11px] text-[#5d6877] pt-1">
+              <div>Managed by <strong className="text-[#8d98a7]">P. Gonze Consultancy</strong></div>
+              <div>Entity: JUNT BUSINESS SUPPORT SERVICES LTD (RC-7892104)</div>
+              <div>Operational Base: Abuja & Kano, Nigeria</div>
+              <div>Direct Inquiries: <a href="mailto:enquiries@jumcart.com" className="text-[#8ea3ff] hover:underline">enquiries@jumcart.com</a></div>
             </div>
           </div>
 
@@ -1294,6 +1477,7 @@ export default function Page() {
               <li><button onClick={() => setTab('sandbox')} className="hover:text-[#e8ecf1]">Webhook Sandbox</button></li>
               <li><button onClick={() => setTab('healing')} className="hover:text-[#e8ecf1]">Self-Healing AI</button></li>
               <li><button onClick={() => setTab('replay')} className="hover:text-[#e8ecf1]">Replay Terminal</button></li>
+              <li><button onClick={() => setTab('alerts')} className="hover:text-[#e8ecf1]">Incident Dispatchers</button></li>
             </ul>
           </div>
 
@@ -1302,7 +1486,8 @@ export default function Page() {
             <ul className="space-y-2 text-[12px]">
               <li><button onClick={() => setActiveModal('sla')} className="hover:text-[#e8ecf1]">99.9% Edge SLA</button></li>
               <li><span className="text-[#3ecf8e] text-[11px] font-mono">TLS 1.3 / AES-256 Storage</span></li>
-              <li><a href="mailto:support@jumcart.com" className="hover:text-[#e8ecf1]">Incident Escalation</a></li>
+              <li><span className="text-[#8ea3ff] text-[11px] font-mono">HMAC Edge Verification</span></li>
+              <li><a href="mailto:enquiries@jumcart.com" className="hover:text-[#e8ecf1]">Incident Escalation</a></li>
             </ul>
           </div>
 
@@ -1310,14 +1495,14 @@ export default function Page() {
             <h4 className="font-mono uppercase text-[11px] text-[#e8ecf1] font-semibold mb-3">Legal</h4>
             <ul className="space-y-2 text-[12px]">
               <li><button onClick={() => setActiveModal('terms')} className="hover:text-[#e8ecf1]">Terms of Service</button></li>
-              <li><button onClick={() => setActiveModal('privacy')} className="hover:text-[#e8ecf1]">Privacy & NDPR</button></li>
+              <li><button onClick={() => setActiveModal('privacy')} className="hover:text-[#e8ecf1]">Privacy & NDPR Compliance</button></li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-[#1c232d] py-5">
           <div className="max-w-[1320px] mx-auto px-4 flex flex-wrap justify-between items-center text-[11px] text-[#5d6877]">
-            <div>© 2026 JumcartFlow. All rights reserved.</div>
+            <div>© 2026 JumcartFlow. Managed by P. Gonze Consultancy. All rights reserved.</div>
             <div className="font-mono">Autonomous Gateway Protocol v2.4.1</div>
           </div>
         </div>
@@ -1343,18 +1528,18 @@ export default function Page() {
               {activeModal === 'privacy' && (
                 <>
                   <p className="font-semibold text-[#e8ecf1]">1. Zero-Retention of Primary Financial Secrets</p>
-                  <p>JumcartFlow operates as an ephemeral proxy. We never log, store, or inspect full credit card numbers, CVVs, or bank verification PINs. All payloads passing through edge relays are evaluated strictly for schema conformance and idempotency keys.</p>
+                  <p>JumcartFlow operates as an ephemeral proxy managed by P. Gonze Consultancy. We never log, store, or inspect full credit card numbers, CVVs, or bank verification PINs. All payloads passing through edge relays are evaluated strictly for schema conformance and idempotency keys.</p>
                   <p className="font-semibold text-[#e8ecf1]">2. Ephemeral Ingestion Buffer</p>
                   <p>Payload headers and body samples stored for manual replay and audit logs are securely isolated by tenant ID and automatically purged after your tier&apos;s retention window (3 to 30 days).</p>
                   <p className="font-semibold text-[#e8ecf1]">3. NDPR & International Compliance</p>
-                  <p>Data routing adheres to Nigerian Data Protection Regulation (NDPR) guidelines and international cloud hosting standards on Vercel and Supabase infrastructure.</p>
+                  <p>Data routing adheres to Nigerian Data Protection Regulation (NDPR) guidelines and international cloud hosting standards on Vercel and Supabase infrastructure. For compliance inquiries, contact enquiries@jumcart.com.</p>
                 </>
               )}
 
               {activeModal === 'terms' && (
                 <>
                   <p className="font-semibold text-[#e8ecf1]">1. Routing & Buffer Responsibility</p>
-                  <p>JumcartFlow guarantees forward delivery attempts up to your configured retry budget. We are not an acquiring bank or licensed card processor; settlement obligations rest with upstream payment providers.</p>
+                  <p>JumcartFlow guarantees forward delivery attempts up to your configured retry budget. We are an infrastructure gateway managed by P. Gonze Consultancy, not an acquiring bank or licensed card processor; settlement obligations rest with upstream payment providers.</p>
                   <p className="font-semibold text-[#e8ecf1]">2. Self-Healing Approvals</p>
                   <p>Autonomous schema transformations deployed via the diagnostic console represent client-authorized data mapping rules. Clients maintain final audit ownership over custom field transforms.</p>
                 </>
@@ -1365,7 +1550,7 @@ export default function Page() {
                   <p className="font-semibold text-[#e8ecf1]">1. 99.9% Uptime Commitment</p>
                   <p>Our edge ingestion proxy routes are distributed globally across sub-50ms serverless endpoints, ensuring resilient buffer intake even when client application servers experience internal outages.</p>
                   <p className="font-semibold text-[#e8ecf1]">2. Incident Escalation</p>
-                  <p>Subscribers receive direct developer dispatch with sub-15 minute response times on edge routing degradation.</p>
+                  <p>Subscribers receive direct developer dispatch with sub-15 minute response times on edge routing degradation via enquiries@jumcart.com.</p>
                 </>
               )}
             </div>
