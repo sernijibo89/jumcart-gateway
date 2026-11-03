@@ -31,11 +31,30 @@ function Icon({ name, size = 16, className = '' }: { name: string; size?: number
         <circle cx="12" cy="12" r="3" />
       </>
     ),
+    FlaskConical: (
+      <>
+        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
+        <path d="M8.5 2h7M7 16h10" />
+      </>
+    ),
     Check: <polyline points="20 6 9 17 4 12" />,
     Copy: (
       <>
         <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
         <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+      </>
+    ),
+    Download: (
+      <>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </>
+    ),
+    Send: (
+      <>
+        <line x1="22" y1="2" x2="11" y2="13" />
+        <polygon points="22 2 15 22 11 13 2 9 22 2" />
       </>
     ),
     X: (
@@ -58,19 +77,6 @@ function Icon({ name, size = 16, className = '' }: { name: string; size?: number
     ),
     Play: <polygon points="5 3 19 12 5 21 5 3" />,
     Zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />,
-    FlaskConical: (
-      <>
-        <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
-        <path d="M8.5 2h7M7 16h10" />
-      </>
-    ),
-    Trash2: (
-      <>
-        <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-        <line x1="10" x2="10" y1="11" y2="17" />
-        <line x1="14" x2="14" y1="11" y2="17" />
-      </>
-    ),
     Eye: (
       <>
         <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
@@ -91,45 +97,10 @@ function Icon({ name, size = 16, className = '' }: { name: string; size?: number
         <line x1="12" y1="19" x2="20" y2="19" />
       </>
     ),
-    Bot: (
-      <>
-        <path d="M12 8V4H8" />
-        <rect width="16" height="12" x="4" y="8" rx="2" />
-        <path d="M2 14h2M20 14h2M15 13v2M9 13v2" />
-      </>
-    ),
-    ArrowRight: (
-      <>
-        <line x1="5" y1="12" x2="19" y2="12" />
-        <polyline points="12 5 19 12 12 19" />
-      </>
-    ),
-    AlertTriangle: (
-      <>
-        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-        <line x1="12" x2="12" y1="9" y2="13" />
-        <line x1="12" x2="12.01" y1="17" y2="17" />
-      </>
-    ),
     ShieldCheck: (
       <>
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
         <path d="m9 12 2 2 4-4" />
-      </>
-    ),
-    Undo2: (
-      <>
-        <path d="M9 14 4 9l5-5" />
-        <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
-      </>
-    ),
-    Square: <rect width="18" height="18" x="3" y="3" rx="2" />,
-    RefreshCw: (
-      <>
-        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-        <path d="M21 3v5h-5" />
-        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-        <path d="M3 21v-5h5" />
       </>
     ),
     Shuffle: (
@@ -199,17 +170,11 @@ function Spark({ data, color }: { data: number[]; color: string }) {
   );
 }
 
+/* ---------- Helpers & Data ---------- */
 const rnd = (a: number, b: number) => Math.floor(Math.random() * (b - a + 1)) + a;
 const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
-const chars = (set: string, n: number) => {
-  let s = '';
-  for (let i = 0; i < n; i++) s += set[rnd(0, set.length - 1)];
-  return s;
-};
-const hex = (n: number) => chars('0123456789abcdef', n);
-const b62 = (n: number) => chars('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', n);
-const digits = (n: number) => chars('0123456789', n);
-const uuid = () => `${hex(8)}-${hex(4)}-4${hex(3)}-a${hex(3)}-${hex(12)}`;
+const hex = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+const digits = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 10).toString()).join('');
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const fmtMs = (ms: number | null) => (ms == null ? '—' : ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : Math.round(ms) + ' ms');
 const money = (n: number) => '$' + Math.round(n).toLocaleString('en-US');
@@ -242,8 +207,8 @@ const DIAG: Record<string, any> = {
     title: 'Payload Schema Mismatch',
     icon: 'Shuffle',
     conf: 97,
-    scope: 'Paystack → api.myapp.com/webhooks/payment',
-    diagnosis: (n: number) => `Your endpoint now expects data.total_amount in naira instead of kobo. Paystack still sends data.amount in kobo. Your server rejected ${n} events with a 422 because the new field was missing. The payments themselves are fine.`,
+    scope: 'Paystack / Nomba → api.myapp.com/webhooks/payment',
+    diagnosis: (n: number) => `Your endpoint expects data.total_amount in naira instead of kobo. Paystack sends amount in kobo. Intercepted ${n} events with 422.`,
     patch: [
       { t: 'ctx', s: 'rule paystack-amount-remap' },
       { t: 'del', s: '- data.amount          // kobo, integer' },
@@ -257,7 +222,7 @@ const DIAG: Record<string, any> = {
     icon: 'Timer',
     conf: 94,
     scope: 'Monnify → billing.northwind.ng/hooks/monnify',
-    diagnosis: (n: number) => `billing.northwind.ng took longer than 10 seconds to answer ${n} events. Backing off and retrying is safe via idempotency keys.`,
+    diagnosis: (n: number) => `billing.northwind.ng took longer than 10s to answer ${n} events. Backing off with idempotency is safe.`,
     patch: [
       { t: 'ctx', s: 'rule extended-timeout-backoff' },
       { t: 'del', s: '- timeout       10s' },
@@ -271,41 +236,66 @@ const DIAG: Record<string, any> = {
     icon: 'Lock',
     conf: 91,
     scope: 'Shopify → orders.kola-store.com/api/shopify/hooks',
-    diagnosis: (n: number) => `Destination is in maintenance mode and answers 503. Jumcart holds these ${n} events in queue until health check returns 200.`,
+    diagnosis: (n: number) => `Destination is in maintenance mode (503). Jumcart holds these ${n} events until health check returns 200.`,
     patch: [
       { t: 'ctx', s: 'rule hold-until-healthy' },
-      { t: 'add', s: '+ on 503 hold in queue (24h)' },
-      { t: 'add', s: '+ probe GET /health every 30s' }
+      { t: 'add', s: '+ on 503      hold events in queue (max 24h)' },
+      { t: 'add', s: '+ probe       GET /health every 30s' }
     ],
-    steps: ['Probing health check URL', 'Creating hold queue', 'Deploying edge patches', 'Releasing held events']
+    steps: ['Probing health check URL', 'Creating hold queue', 'Deploying edge configuration', 'Releasing held events']
   },
   secret: {
     title: 'Signature Secret Rotated',
     icon: 'KeyRound',
     conf: 96,
     scope: 'Stripe → api.myapp.com/webhooks/stripe',
-    diagnosis: (n: number) => `Webhook signature secret rotated. Re-signing forwarded requests automatically with active key for ${n} events.`,
+    diagnosis: (n: number) => `Signature secret changed on Oct 28. Refused ${n} valid events. Re-signing forwarded requests automatically.`,
     patch: [
       { t: 'ctx', s: 'rule resign-with-new-secret' },
       { t: 'del', s: '- stripe-signature  v1=<signed with old_secret>' },
       { t: 'add', s: '+ stripe-signature  v1=<signed with new_secret>' }
     ],
-    steps: ['Verifying secret', 'Resigning payloads', 'Deploying edge patches', 'Replaying failed events']
+    steps: ['Verifying secret with test ping', 'Re-signing payloads', 'Deploying to edge regions', 'Replaying failed events']
+  }
+};
+
+const SANDBOX_TEMPLATES: Record<string, any> = {
+  paystack: {
+    event: 'charge.success',
+    data: { id: 48920184, reference: 'PSK_LIVE_8392', amount: 500000, currency: 'NGN', customer: { email: 'client@jumcart.com' } }
+  },
+  nomba: {
+    event: 'payment.success',
+    data: { orderReference: 'NMB_REF_1829', amount: '25000', currency: 'NGN', customer: { email: 'buyer@business.ng' } }
+  },
+  haildesk: {
+    event: 'ticket.created',
+    data: { ticket_id: 'hd_9921', priority: 'urgent', customer: { email: 'support@haildesk.com', name: 'Mayowa' }, text: 'Inbound customer webhook' }
+  },
+  monnify: {
+    eventType: 'SUCCESSFUL_TRANSACTION',
+    eventData: { transactionReference: 'MNFY|10291029', amountPaid: 15000, customer: { email: 'user@northwind.ng' } }
+  },
+  stripe: {
+    id: 'evt_39102948',
+    type: 'payment_intent.succeeded',
+    data: { object: { id: 'pi_live_9921', amount: 4900, currency: 'usd' } }
   }
 };
 
 const EP_SEED = [
   { id: 'ep1', name: 'Payments', provider: 'paystack', dest: 'https://api.myapp.com/webhooks/payment', proxy: 'gonze_live_839201', active: true, ev24h: 18402, rate: 99.91 },
   { id: 'ep2', name: 'Haildesk Support Hooks', provider: 'paystack', dest: 'https://haildesk.com/api/webhooks/incoming', proxy: 'haildesk_prod_01', active: true, ev24h: 5240, rate: 99.98 },
-  { id: 'ep3', name: 'Billing transfers', provider: 'monnify', dest: 'https://billing.northwind.ng/hooks/monnify', proxy: 'gonze_live_702144', active: true, ev24h: 6120, rate: 99.74 },
-  { id: 'ep4', name: 'Store orders', provider: 'shopify', dest: 'https://orders.kola-store.com/api/shopify/hooks', proxy: 'gonze_live_451907', active: true, ev24h: 9377, rate: 99.62 },
-  { id: 'ep5', name: 'Subscriptions', provider: 'stripe', dest: 'https://api.myapp.com/webhooks/stripe', proxy: 'gonze_live_118563', active: true, ev24h: 11890, rate: 99.88 }
+  { id: 'ep3', name: 'Nomba Ingestion', provider: 'nomba', dest: 'https://httpbin.org/post', proxy: 'gonze_live_612984', active: true, ev24h: 4210, rate: 99.85 },
+  { id: 'ep4', name: 'Billing transfers', provider: 'monnify', dest: 'https://billing.northwind.ng/hooks/monnify', proxy: 'gonze_live_702144', active: true, ev24h: 6120, rate: 99.74 },
+  { id: 'ep5', name: 'Store orders', provider: 'shopify', dest: 'https://orders.kola-store.com/api/shopify/hooks', proxy: 'gonze_live_451907', active: true, ev24h: 9377, rate: 99.62 },
+  { id: 'ep6', name: 'Subscriptions', provider: 'stripe', dest: 'https://api.myapp.com/webhooks/stripe', proxy: 'gonze_live_118563', active: true, ev24h: 11890, rate: 99.88 }
 ];
 
 function seedEvents() {
   const now = Date.now();
   const out: any[] = [];
-  const provs = ['paystack', 'stripe', 'monnify', 'shopify', 'github'];
+  const provs = ['paystack', 'nomba', 'stripe', 'monnify', 'shopify', 'github'];
   for (let i = 0; i < 48; i++) {
     const p = provs[i % provs.length];
     const ep = EP_SEED.find((e) => e.provider === p) || EP_SEED[0];
@@ -331,7 +321,7 @@ function seedEvents() {
       },
       body: {
         event: 'charge.success',
-        data: { id: 'tx_' + hex(8), amount: amt, currency: 'NGN', customer: { email: 'client@business.ng' } }
+        data: { id: 'tx_' + hex(8), amount: amt, currency: 'NGN', customer: { email: 'client@jumcart.com' } }
       },
       resp: {
         code: isFail ? 422 : 200,
@@ -346,7 +336,7 @@ function seedEvents() {
 }
 
 export default function Page() {
-  const [tab, setTab] = useState<'stream' | 'endpoints' | 'healing' | 'replay' | 'keys'>('stream');
+  const [tab, setTab] = useState<'stream' | 'sandbox' | 'endpoints' | 'healing' | 'replay' | 'keys'>('stream');
   const [endpoints, setEndpoints] = useState(EP_SEED);
   const [events, setEvents] = useState<any[]>(seedEvents);
   const [live, setLive] = useState(true);
@@ -354,16 +344,24 @@ export default function Page() {
   const [now, setNow] = useState(Date.now());
   const [toasts, setToasts] = useState<any[]>([]);
 
+  // Legal & Support Modal State
+  const [activeModal, setActiveModal] = useState<'privacy' | 'terms' | 'sla' | null>(null);
+
   // Filtering
   const [fStatus, setFStatus] = useState('all');
   const [fProv, setFProv] = useState('all');
   const [searchQ, setSearchQ] = useState('');
 
+  // Sandbox State
+  const [sbProvider, setSbProvider] = useState('paystack');
+  const [sbPayload, setSbPayload] = useState(JSON.stringify(SANDBOX_TEMPLATES.paystack, null, 2));
+  const [sbTargetProxy, setSbTargetProxy] = useState('gonze_live_839201');
+  const [sbSending, setSbSending] = useState(false);
+
   // Endpoints Generator
   const [genUrl, setGenUrl] = useState('https://api.myapp.com/webhooks/payment');
   const [genProv, setGenProv] = useState('paystack');
   const [activeProxy, setActiveProxy] = useState(EP_SEED[0]);
-  const [snippetTab, setSnippetTab] = useState<'dash' | 'node' | 'curl'>('dash');
 
   // Self Healing State
   const [diags, setDiags] = useState<Record<string, any>>({
@@ -373,20 +371,19 @@ export default function Page() {
     secret: { status: 'pending', step: 0 }
   });
 
-  // Replay State
-  const [rsel, setRsel] = useState<Record<string, boolean>>({});
+  // Replay Console
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<any[]>([
-    { id: 1, k: 'dim', t: 'jumcart-cli 2.4.1 · replay engine online. Select failed events to run backoff retry.' }
+    { id: 1, k: 'dim', t: 'jumcart-cli 2.4.1 · replay engine online. Ready to dispatch.' }
   ]);
   const cancelReplay = useRef(false);
 
   // Settings
   const [keys, setKeys] = useState([
-    { id: 'k1', name: 'Production Backend', env: 'live', value: 'jm_live_sk_' + hex(32), created: 'Nov 01, 2026', shown: false },
-    { id: 'k2', name: 'Staging Relay', env: 'test', value: 'jm_test_sk_' + hex(32), created: 'Oct 28, 2026', shown: false }
+    { id: 'k1', name: 'Production Ingestion Key', env: 'live', value: 'jm_live_sk_' + hex(32), created: 'Nov 03, 2026', shown: false },
+    { id: 'k2', name: 'Staging Ingestion Key', env: 'test', value: 'jm_test_sk_' + hex(32), created: 'Oct 28, 2026', shown: false }
   ]);
-  const [settings, setSettings] = useState({ max: 5, base: 2, mult: 2, jitter: true, timeout: 10, auto: false });
+  const [settings, setSettings] = useState({ max: 5, base: 2, mult: 2, jitter: true });
 
   // Metrics
   const [metrics, setMetrics] = useState({
@@ -421,7 +418,7 @@ export default function Page() {
     if (!live) return;
     const interval = setInterval(() => {
       const ep = pick(endpoints);
-      const isFail = Math.random() < 0.09;
+      const isFail = Math.random() < 0.08;
       const cls = CLS_BY_PROV[ep.provider] || 'schema';
       const isHealed = isFail && diags[cls]?.status === 'applied';
       const amt = pick([45000, 75000, 120000]);
@@ -447,6 +444,78 @@ export default function Page() {
 
     return () => clearInterval(interval);
   }, [live, endpoints, diags]);
+
+  // Export Events to CSV
+  const handleExportCSV = () => {
+    if (!events.length) {
+      toast('No events to export.', 'info');
+      return;
+    }
+    const csvHeaders = ['id', 'status', 'type', 'provider', 'destination', 'latency_ms', 'timestamp'];
+    const rows = events.map((e) => [e.id, e.status, e.type, e.provider, e.dest, e.latency || 0, new Date(e.ts).toISOString()]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [csvHeaders.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `jumcart_events_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast('Event log exported to CSV.', 'ok');
+  };
+
+  // Switch Sandbox Template
+  const handleTemplateSwitch = (prov: string) => {
+    setSbProvider(prov);
+    const tmpl = SANDBOX_TEMPLATES[prov] || SANDBOX_TEMPLATES.paystack;
+    setSbPayload(JSON.stringify(tmpl, null, 2));
+  };
+
+  // Fire Real Sandbox Webhook
+  const handleFireSandbox = async () => {
+    setSbSending(true);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(sbPayload);
+    } catch {
+      toast('Invalid JSON syntax.', 'bad');
+      setSbSending(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/p/${sbTargetProxy}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed)
+      });
+      const data = await res.json();
+      toast(`Webhook dispatched to /api/p/${sbTargetProxy} (${data.status || '200'})`, 'ok');
+      setTab('stream');
+    } catch {
+      // Fallback local injection if offline
+      const mockEv = {
+        id: 'evt_' + hex(10),
+        provider: sbProvider,
+        type: parsed.event || parsed.type || 'webhook.received',
+        dest: 'https://httpbin.org/post',
+        ts: Date.now(),
+        usd: 250,
+        status: 'ok',
+        latency: rnd(22, 45),
+        cls: null,
+        headers: { 'content-type': 'application/json' },
+        body: parsed,
+        resp: { code: 200, body: { status: 'success' } },
+        attempts: [{ n: 1, code: 200, text: 'OK', ms: 24, ok: true }]
+      };
+      setEvents((prev) => [mockEv, ...prev]);
+      toast('Sandbox webhook simulated in live stream.', 'ok');
+      setTab('stream');
+    } finally {
+      setSbSending(false);
+    }
+  };
 
   // Handle Endpoint Generation
   const handleGenerateEndpoint = (e: React.FormEvent) => {
@@ -523,7 +592,6 @@ export default function Page() {
     }
 
     setRunning(false);
-    setRsel({});
     setLogs((l) => [...l, { id: Date.now(), k: 'cmd', t: `done · replay batch finished.` }]);
   };
 
@@ -543,7 +611,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-[#090b0f] text-[#e8ecf1] font-sans antialiased text-[14px]">
-      {/* Top Header */}
+      {/* Header */}
       <header className="border-b border-[#1c232d] bg-[#090b0f]">
         <div className="max-w-[1320px] mx-auto px-4">
           <div className="flex flex-wrap items-center justify-between gap-4 py-3">
@@ -569,6 +637,7 @@ export default function Page() {
           <nav className="flex gap-2 overflow-x-auto no-scrollbar border-t border-[#1c232d]/40">
             {[
               { id: 'stream', label: 'Live Stream', icon: 'Activity' },
+              { id: 'sandbox', label: 'Interactive Sandbox', icon: 'FlaskConical' },
               { id: 'endpoints', label: 'Endpoints & Proxies', icon: 'Webhook' },
               { id: 'healing', label: 'Self-Healing AI Logs', icon: 'Sparkles', count: failedCount },
               { id: 'replay', label: 'Replay Engine', icon: 'RotateCcw' },
@@ -596,7 +665,7 @@ export default function Page() {
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Content */}
       <main className="max-w-[1320px] mx-auto px-4 pt-5 space-y-4">
         {/* Metric Strip */}
         <section className="bg-[#0e1116] border border-[#1c232d] rounded-lg grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 overflow-hidden">
@@ -637,7 +706,7 @@ export default function Page() {
           </div>
         </section>
 
-        {/* VIEW 1: LIVE STREAM */}
+        {/* TAB 1: LIVE STREAM */}
         {tab === 'stream' && (
           <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 border-b border-[#1c232d]">
@@ -654,6 +723,12 @@ export default function Page() {
                   className="inline-flex items-center gap-1.5 text-xs bg-[#141a22] border border-[#2a3340] hover:border-[#5d6877] px-3 py-1.5 rounded font-medium transition"
                 >
                   <Icon name={live ? 'Pause' : 'Play'} size={13} /> {live ? 'Pause' : 'Resume'}
+                </button>
+                <button
+                  onClick={handleExportCSV}
+                  className="inline-flex items-center gap-1.5 text-xs bg-[#141a22] border border-[#2a3340] hover:border-[#5d6877] px-3 py-1.5 rounded font-medium transition"
+                >
+                  <Icon name="Download" size={13} /> Export CSV
                 </button>
                 <button
                   onClick={() => {
@@ -771,7 +846,86 @@ export default function Page() {
           </div>
         )}
 
-        {/* VIEW 2: ENDPOINTS & PROXIES */}
+        {/* TAB 2: INTERACTIVE SANDBOX */}
+        {tab === 'sandbox' && (
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+            <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-bold text-base">In-App Webhook Dispatcher Sandbox</h2>
+                  <p className="text-xs text-[#8d98a7] mt-1">
+                    Select a template or craft custom JSON to test gateway ingestion and auto-healing.
+                  </p>
+                </div>
+                <div className="flex gap-1.5">
+                  {Object.keys(SANDBOX_TEMPLATES).map((prov) => (
+                    <button
+                      key={prov}
+                      onClick={() => handleTemplateSwitch(prov)}
+                      className={`text-xs px-2.5 py-1 rounded font-medium border transition ${
+                        sbProvider === prov
+                          ? 'bg-[#141a22] border-[#8ea3ff] text-[#e8ecf1]'
+                          : 'border-[#2a3340] text-[#8d98a7] hover:text-[#e8ecf1]'
+                      }`}
+                    >
+                      {prov.charAt(0).toUpperCase() + prov.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-[#8d98a7] block mb-1 font-mono">Payload JSON Body</label>
+                <textarea
+                  rows={13}
+                  value={sbPayload}
+                  onChange={(e) => setSbPayload(e.target.value)}
+                  className="w-full bg-[#090b0f] border border-[#2a3340] rounded p-3 font-mono text-xs text-[#8ea3ff] focus:outline-none focus:border-[#8ea3ff]"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#8d98a7]">Target Proxy:</span>
+                  <select
+                    value={sbTargetProxy}
+                    onChange={(e) => setSbTargetProxy(e.target.value)}
+                    className="bg-[#090b0f] border border-[#2a3340] text-xs rounded px-2 py-1 text-[#e8ecf1]"
+                  >
+                    {endpoints.map((ep) => (
+                      <option key={ep.id} value={ep.proxy}>{ep.name} ({ep.proxy})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleFireSandbox}
+                  disabled={sbSending}
+                  className="bg-[#8ea3ff] text-[#0a0d18] text-xs font-semibold px-4 py-2 rounded inline-flex items-center gap-1.5 hover:bg-[#a5b6ff] disabled:opacity-40 transition"
+                >
+                  <Icon name="Send" size={13} /> {sbSending ? 'Dispatching...' : 'Fire Sandbox Webhook'}
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
+              <h2 className="font-bold text-base">Sandbox Testing Instructions</h2>
+              <div className="text-xs text-[#8d98a7] space-y-3 leading-relaxed">
+                <p>
+                  1. <strong>Select a Template:</strong> Click on <code className="text-[#e8ecf1]">Paystack</code>, <code className="text-[#e8ecf1]">Nomba</code>, or <code className="text-[#e8ecf1]">Haildesk</code> to populate a production-grade webhook payload.
+                </p>
+                <p>
+                  2. <strong>Simulate Schema Drift:</strong> Try changing numeric amounts to strings (e.g., <code className="text-[#ff6370]">&quot;500000&quot;</code>) to watch the self-healing engine catch the 422 error and suggest a transform rule.
+                </p>
+                <p>
+                  3. <strong>Immediate Inspection:</strong> When fired, the event is immediately pushed to the <strong>Live Stream</strong> and written into your database.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: ENDPOINTS & PROXIES */}
         {tab === 'endpoints' && (
           <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
@@ -860,7 +1014,7 @@ export default function Page() {
           </div>
         )}
 
-        {/* VIEW 3: SELF-HEALING DIAGNOSTICS */}
+        {/* TAB 4: SELF-HEALING DIAGNOSTICS */}
         {tab === 'healing' && (
           <div className="space-y-4">
             <h2 className="font-bold text-base">Self-Healing Diagnostics</h2>
@@ -934,7 +1088,7 @@ export default function Page() {
           </div>
         )}
 
-        {/* VIEW 4: REPLAY ENGINE */}
+        {/* TAB 5: REPLAY ENGINE */}
         {tab === 'replay' && (
           <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
@@ -1014,10 +1168,10 @@ export default function Page() {
           </div>
         )}
 
-        {/* VIEW 5: SETTINGS & KEYS */}
+        {/* TAB 6: SETTINGS & KEYS */}
         {tab === 'keys' && (
           <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-5">
-            <h2 className="font-bold text-base">API Authentication & Retry Policy</h2>
+            <h2 className="font-bold text-base">API Authentication & Ingestion Keys</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono">
                 <thead>
@@ -1070,7 +1224,7 @@ export default function Page() {
               </button>
             </div>
             <div className="space-y-2">
-              <div className="text-xs font-mono uppercase text-[#5d6877]">Request Body</div>
+              <div className="text-xs font-mono uppercase text-[#5d6877]">Payload Body</div>
               <pre className="p-3 bg-[#090b0f] border border-[#1c232d] rounded text-xs font-mono overflow-x-auto text-[#8ea3ff]">
                 {JSON.stringify(openEv.body, null, 2)}
               </pre>
@@ -1098,11 +1252,107 @@ export default function Page() {
         ))}
       </div>
 
-      {/* Footer */}
-      <footer className="max-w-[1320px] mx-auto px-4 py-8 border-t border-[#1c232d] mt-12 flex flex-wrap justify-between items-center text-xs text-[#5d6877]">
-        <div>© 2026 JumcartFlow. All rights reserved.</div>
-        <div className="font-mono">Operated by JumcartFlow</div>
+      {/* Professional 4-Column Legal Footer */}
+      <footer className="border-t border-[#1c232d] bg-[#07090c] mt-16 text-xs text-[#8d98a7]">
+        <div className="max-w-[1320px] mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-5 gap-8">
+          <div className="md:col-span-2 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-[#8ea3ff] text-[#0a0d18] font-bold grid place-items-center text-xs">J</div>
+              <span className="text-sm font-bold text-[#e8ecf1]">JumcartFlow</span>
+            </div>
+            <p className="text-[12px] text-[#5d6877] max-w-sm leading-relaxed">
+              Autonomous self-healing webhook proxy and zero-drop ingestion buffer. Eliminating lost revenue and dropped integrations across African and global payment rails.
+            </p>
+            <div className="font-mono text-[11px] text-[#5d6877]">
+              Operated by JumcartFlow
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-mono uppercase text-[11px] text-[#e8ecf1] font-semibold mb-3">Product</h4>
+            <ul className="space-y-2 text-[12px]">
+              <li><button onClick={() => setTab('stream')} className="hover:text-[#e8ecf1]">Live Stream</button></li>
+              <li><button onClick={() => setTab('sandbox')} className="hover:text-[#e8ecf1]">Webhook Sandbox</button></li>
+              <li><button onClick={() => setTab('healing')} className="hover:text-[#e8ecf1]">Self-Healing AI</button></li>
+              <li><button onClick={() => setTab('replay')} className="hover:text-[#e8ecf1]">Replay Terminal</button></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-mono uppercase text-[11px] text-[#e8ecf1] font-semibold mb-3">Trust & Reliability</h4>
+            <ul className="space-y-2 text-[12px]">
+              <li><button onClick={() => setActiveModal('sla')} className="hover:text-[#e8ecf1]">99.9% Edge SLA</button></li>
+              <li><span className="text-[#3ecf8e] text-[11px] font-mono">TLS 1.3 / AES-256 Verified</span></li>
+              <li><a href="mailto:support@jumcart.com" className="hover:text-[#e8ecf1]">Incident Escalation</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-mono uppercase text-[11px] text-[#e8ecf1] font-semibold mb-3">Legal</h4>
+            <ul className="space-y-2 text-[12px]">
+              <li><button onClick={() => setActiveModal('terms')} className="hover:text-[#e8ecf1]">Terms of Service</button></li>
+              <li><button onClick={() => setActiveModal('privacy')} className="hover:text-[#e8ecf1]">Privacy & NDPR</button></li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="border-t border-[#1c232d] py-5">
+          <div className="max-w-[1320px] mx-auto px-4 flex flex-wrap justify-between items-center text-[11px] text-[#5d6877]">
+            <div>© 2026 JumcartFlow. All rights reserved.</div>
+            <div className="font-mono">Autonomous Gateway Protocol v2.4.1</div>
+          </div>
+        </div>
       </footer>
+
+      {/* Legal Modal Dialog */}
+      {activeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/75" onClick={() => setActiveModal(null)} />
+          <div className="relative w-full max-w-lg bg-[#0e1116] border border-[#2a3340] rounded-xl p-6 z-10 shadow-2xl max-h-[85vh] flex flex-col">
+            <div className="flex justify-between items-center border-b border-[#1c232d] pb-3 mb-4">
+              <h3 className="font-bold text-sm text-[#e8ecf1]">
+                {activeModal === 'privacy' && 'Privacy & Data Protection Policy (NDPR & GDPR)'}
+                {activeModal === 'terms' && 'Terms of Service'}
+                {activeModal === 'sla' && 'Service Level Agreement (SLA)'}
+              </h3>
+              <button onClick={() => setActiveModal(null)} className="text-[#5d6877] hover:text-[#e8ecf1]">
+                <Icon name="X" size={16} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto text-xs text-[#8d98a7] space-y-3 leading-relaxed pr-1 flex-1">
+              {activeModal === 'privacy' && (
+                <>
+                  <p className="font-semibold text-[#e8ecf1]">1. Zero-Retention of Primary Financial Secrets</p>
+                  <p>JumcartFlow operates as an ephemeral proxy. We never log, store, or inspect full credit card numbers, CVVs, or bank verification PINs. All payloads passing through edge relays are evaluated strictly for schema conformance and idempotency keys.</p>
+                  <p className="font-semibold text-[#e8ecf1]">2. Ephemeral Ingestion Buffer</p>
+                  <p>Payload headers and body samples stored for manual replay and audit logs are securely isolated by tenant ID and automatically purged after your tier&apos;s retention window (3 to 30 days).</p>
+                  <p className="font-semibold text-[#e8ecf1]">3. NDPR & International Compliance</p>
+                  <p>Data routing adheres to Nigerian Data Protection Regulation (NDPR) guidelines and international cloud hosting standards on Vercel and Supabase infrastructure.</p>
+                </>
+              )}
+
+              {activeModal === 'terms' && (
+                <>
+                  <p className="font-semibold text-[#e8ecf1]">1. Routing & Buffer Responsibility</p>
+                  <p>JumcartFlow guarantees forward delivery attempts up to your configured retry budget. We are not an acquiring bank or licensed card processor; settlement obligations rest with upstream payment providers.</p>
+                  <p className="font-semibold text-[#e8ecf1]">2. Self-Healing Approvals</p>
+                  <p>Autonomous schema transformations deployed via the diagnostic console represent client-authorized data mapping rules. Clients maintain final audit ownership over custom field transforms.</p>
+                </>
+              )}
+
+              {activeModal === 'sla' && (
+                <>
+                  <p className="font-semibold text-[#e8ecf1]">1. 99.9% Uptime Commitment</p>
+                  <p>Our edge ingestion proxy routes are distributed globally across sub-50ms serverless endpoints, ensuring resilient buffer intake even when client application servers experience internal outages.</p>
+                  <p className="font-semibold text-[#e8ecf1]">2. Incident Escalation</p>
+                  <p>Subscribers receive direct developer dispatch with sub-15 minute response times on edge routing degradation.</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
