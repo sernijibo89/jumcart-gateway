@@ -1,6 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fkmwcpzrpcrmisafpdfx.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.dummy'
+);
 
 /* ---------- Native SVG Icons ---------- */
 function Icon({ name, size = 16, className = '' }: { name: string; size?: number; className?: string }) {
@@ -135,6 +141,19 @@ function Icon({ name, size = 16, className = '' }: { name: string; size?: number
         <path d="m21 2-2 2m-1.5 1.5L16 7l4 4 1.5-1.5m-3-3L20 8" />
         <circle cx="7.5" cy="15.5" r="5.5" />
       </>
+    ),
+    User: (
+      <>
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </>
+    ),
+    LogOut: (
+      <>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
+      </>
     )
   };
 
@@ -191,14 +210,14 @@ const ago = (ts: number, now: number) => {
 };
 const host = (u: string) => u.replace(/^https?:\/\//, '');
 
-const PROV: Record<string, { name: string; letter: string; color: string; sampleIps: string }> = {
-  paystack: { name: 'Paystack', letter: 'P', color: '#4db8f0', sampleIps: '52.31.139.75, 52.49.173.169' },
-  nomba: { name: 'Nomba', letter: 'N', color: '#ffb703', sampleIps: '34.248.10.82, 34.249.20.11' },
-  flutterwave: { name: 'Flutterwave', letter: 'F', color: '#fb923c', sampleIps: '54.75.161.64, 34.250.211.45' },
-  monnify: { name: 'Monnify', letter: 'M', color: '#ff9366', sampleIps: '35.189.67.90' },
-  opay: { name: 'OPay', letter: 'O', color: '#10b981', sampleIps: '18.130.40.11' },
-  stripe: { name: 'Stripe', letter: 'S', color: '#a597ff', sampleIps: '3.18.12.63, 3.130.192.212' },
-  shopify: { name: 'Shopify', letter: 'H', color: '#a9cf72', sampleIps: '23.227.38.0/24' }
+const PROV: Record<string, { name: string; letter: string; color: string }> = {
+  paystack: { name: 'Paystack', letter: 'P', color: '#4db8f0' },
+  nomba: { name: 'Nomba', letter: 'N', color: '#ffb703' },
+  flutterwave: { name: 'Flutterwave', letter: 'F', color: '#fb923c' },
+  monnify: { name: 'Monnify', letter: 'M', color: '#ff9366' },
+  opay: { name: 'OPay', letter: 'O', color: '#10b981' },
+  stripe: { name: 'Stripe', letter: 'S', color: '#a597ff' },
+  shopify: { name: 'Shopify', letter: 'H', color: '#a9cf72' }
 };
 
 const CLS_BY_PROV: Record<string, string> = {
@@ -365,6 +384,12 @@ export default function Page() {
   const [now, setNow] = useState(Date.now());
   const [toasts, setToasts] = useState<any[]>([]);
 
+  // Auth States
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
   // Multi-Tenant Workspace State
   const [workspace, setWorkspace] = useState('Production (Main)');
 
@@ -390,14 +415,13 @@ export default function Page() {
   const [genWhitelist, setGenWhitelist] = useState(true);
   const [activeProxy, setActiveProxy] = useState(EP_SEED[0]);
 
-  // Instant Failure Alert Channels State
+  // Alert Channels State
   const [alertChannels, setAlertChannels] = useState({
     slackWebhook: 'https://hooks.slack.com/services/T00/B00/X00EXAMPLE',
     telegramChatId: '1092849182',
     whatsappPhone: '+2348000000000',
     notifyOn5xx: true,
-    notifyOnSchemaBreak: true,
-    notifyOnReplayFailure: true
+    notifyOnSchemaBreak: true
   });
 
   // Self Healing State
@@ -411,16 +435,15 @@ export default function Page() {
   // Replay State
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<any[]>([
-    { id: 1, k: 'dim', t: 'jumcart-cli 2.4.1 · replay engine online. Monitoring active channels.' }
+    { id: 1, k: 'dim', t: 'jumcart-cli 2.4.1 · replay engine online. Ready for manual or auto dispatch.' }
   ]);
   const cancelReplay = useRef(false);
 
   // Keys State
   const [keys, setKeys] = useState([
-    { id: 'k1', name: 'Production Ingestion Key', env: 'live', value: 'jm_live_sk_' + hex(32), created: 'Nov 03, 2026', shown: false },
+    { id: 'k1', name: 'Production Gateway Key', env: 'live', value: 'jm_live_sk_' + hex(32), created: 'Nov 03, 2026', shown: false },
     { id: 'k2', name: 'Staging Ingestion Key', env: 'test', value: 'jm_test_sk_' + hex(32), created: 'Oct 28, 2026', shown: false }
   ]);
-  const [settings] = useState({ max: 5, base: 2, mult: 2, jitter: true });
 
   const toast = useCallback((msg: string, kind = 'info') => {
     const id = Date.now() + Math.random();
@@ -433,14 +456,129 @@ export default function Page() {
     toast('Copied to clipboard.', 'ok');
   };
 
+  /* ---------- Supabase Auth & RLS Handshake ---------- */
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setCurrentUser(session.user);
+        loadUserDatabase(session.user.id);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser(session.user);
+        loadUserDatabase(session.user.id);
+      } else {
+        setCurrentUser(null);
+        setEndpoints(EP_SEED);
+        setEvents(seedEvents());
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loadUserDatabase = async (userId: string) => {
+    toast(`Authenticated as tenant. Loading isolated ledger...`, 'ok');
+    try {
+      const { data: userEndpoints } = await supabase
+        .from('endpoints')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (userEndpoints && userEndpoints.length > 0) {
+        setEndpoints(userEndpoints.map((ep) => ({
+          id: ep.id,
+          name: ep.name,
+          provider: ep.provider || 'paystack',
+          dest: ep.destination_url,
+          proxy: ep.proxy_id,
+          active: ep.active,
+          secret: ep.webhook_secret || '',
+          verifyHmac: ep.verify_hmac,
+          ipWhitelist: ep.ip_whitelist,
+          customHeader: ep.custom_headers ? JSON.stringify(ep.custom_headers) : ''
+        })));
+        setActiveProxy(userEndpoints[0]);
+      }
+
+      const { data: userEvents } = await supabase
+        .from('events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(60);
+
+      if (userEvents && userEvents.length > 0) {
+        setEvents(userEvents.map((d) => ({
+          id: d.id,
+          provider: d.provider || 'paystack',
+          type: d.event_type || 'webhook.received',
+          dest: d.destination_url || 'https://api.myapp.com/webhooks/incoming',
+          ts: new Date(d.created_at).getTime(),
+          usd: 0,
+          status: d.healed ? 'healed' : d.status === 'ok' ? 'ok' : 'failed',
+          latency: d.latency_ms || 24,
+          cls: d.status === 'failed' ? 'schema' : null,
+          headers: { 'content-type': 'application/json' },
+          body: d.payload || {},
+          resp: { code: d.status_code || 200, body: d.response_body || {} },
+          attempts: [{ n: 1, code: d.status_code || 200, text: 'Recorded', ms: d.latency_ms || 24, ok: d.status === 'ok' }]
+        })));
+      }
+    } catch {
+      // Fallback cleanly without stopping demo mode
+    }
+  };
+
+  const handleMagicLinkLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authEmail.includes('@')) {
+      toast('Enter a valid developer email.', 'bad');
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: authEmail,
+        options: { emailRedirectTo: window.location.origin }
+      });
+      if (error) throw error;
+      toast('Magic sign-in link dispatched to your inbox!', 'ok');
+      setAuthModalOpen(false);
+    } catch (err: any) {
+      toast(err.message || 'Authentication failed.', 'bad');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleOAuthLogin = async (provider: 'github' | 'google') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      toast(err.message || 'OAuth error occurred.', 'bad');
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setCurrentUser(null);
+    toast('Logged out. Switched back to Interactive Demo Mode.', 'info');
+  };
+
   useEffect(() => {
     const ticker = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(ticker);
   }, []);
 
-  // Background stream pulse
+  // Background stream pulse for demo
   useEffect(() => {
-    if (!live) return;
+    if (!live || currentUser) return;
     const interval = setInterval(() => {
       const ep = pick(endpoints);
       const isFail = Math.random() < 0.08;
@@ -474,7 +612,7 @@ export default function Page() {
     }, 3200);
 
     return () => clearInterval(interval);
-  }, [live, endpoints, diags]);
+  }, [live, endpoints, diags, currentUser]);
 
   /* Dynamic Live Metrics */
   const dynamicMetrics = useMemo(() => {
@@ -570,28 +708,51 @@ export default function Page() {
     }
   };
 
-  // Generate Endpoint
-  const handleGenerateEndpoint = (e: React.FormEvent) => {
+  // Action Gate: Endpoint Generator
+  const handleGenerateEndpoint = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) {
+      setAuthModalOpen(true);
+      toast('Sign in required to bind a production proxy to your team account.', 'info');
+      return;
+    }
+
     if (!genUrl.startsWith('http')) {
       toast('Enter a valid URL starting with http:// or https://', 'bad');
       return;
     }
+
+    const newProxyId = 'usr_live_' + digits(8);
     const newEp = {
       id: 'ep_' + hex(6),
       name: `${PROV[genProv].name} · ${host(genUrl).split('/')[0]}`,
       provider: genProv,
       dest: genUrl,
-      proxy: 'gonze_live_' + digits(6),
+      proxy: newProxyId,
       active: true,
       secret: genSecret,
       verifyHmac: true,
       ipWhitelist: genWhitelist,
       customHeader: genCustomHeader
     };
-    setEndpoints((prev) => [newEp, ...prev]);
-    setActiveProxy(newEp);
-    toast('Proxy generated with signature verification and IP whitelisting.', 'ok');
+
+    try {
+      await supabase.from('endpoints').insert({
+        user_id: currentUser.id,
+        proxy_id: newProxyId,
+        name: newEp.name,
+        provider: genProv,
+        destination_url: genUrl,
+        webhook_secret: genSecret,
+        verify_hmac: true,
+        ip_whitelist: genWhitelist
+      });
+      setEndpoints((prev) => [newEp, ...prev]);
+      setActiveProxy(newEp);
+      toast('Protected proxy registered and bound to your workspace.', 'ok');
+    } catch (err: any) {
+      toast(err.message || 'Error creating database endpoint', 'bad');
+    }
   };
 
   // Approve AI Patch
@@ -621,7 +782,7 @@ export default function Page() {
     setRunning(true);
     cancelReplay.current = false;
 
-    setLogs((l) => [...l, { id: Date.now(), k: 'cmd', t: `$ jumcart replay --events ${targetIds.length} --max-attempts ${settings.max}` }]);
+    setLogs((l) => [...l, { id: Date.now(), k: 'cmd', t: `$ jumcart replay --events ${targetIds.length}` }]);
 
     for (const id of targetIds) {
       if (cancelReplay.current) break;
@@ -693,9 +854,39 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="inline-flex items-center gap-2 font-mono text-xs text-[#3ecf8e] bg-[#3ecf8e]/10 border border-[#3ecf8e]/25 rounded px-2.5 py-1">
-              <span className="w-2 h-2 rounded-full bg-[#3ecf8e] animate-pulse" />
-              Network: 99.99% Operational
+            {/* Auth Indicator & Action Gates */}
+            <div className="flex items-center gap-3">
+              {currentUser ? (
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex flex-col text-right font-mono text-[11px]">
+                    <span className="text-[#e8ecf1] font-medium truncate max-w-[180px]">{currentUser.email}</span>
+                    <span className="text-[#8ea3ff]">{activeProxy?.proxy || 'No proxy active'}</span>
+                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="inline-flex items-center gap-1.5 text-xs bg-[#141a22] border border-[#2a3340] hover:border-[#ff6370] text-[#ff6370] px-2.5 py-1.5 rounded transition"
+                  >
+                    <Icon name="LogOut" size={13} /> Sign Out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px] text-[#f2a93b] bg-[#f2a93b]/10 border border-[#f2a93b]/25 rounded px-2.5 py-1">
+                    Live Demo Mode
+                  </span>
+                  <button
+                    onClick={() => setAuthModalOpen(true)}
+                    className="bg-[#8ea3ff] text-[#0a0d18] font-semibold text-xs px-3.5 py-1.5 rounded hover:bg-[#a5b6ff] transition inline-flex items-center gap-1.5 shadow-lg shadow-[#8ea3ff]/10"
+                  >
+                    <Icon name="User" size={13} /> Connect Your App / Sign In
+                  </button>
+                </div>
+              )}
+
+              <div className="hidden md:inline-flex items-center gap-2 font-mono text-xs text-[#3ecf8e] bg-[#3ecf8e]/10 border border-[#3ecf8e]/25 rounded px-2.5 py-1">
+                <span className="w-2 h-2 rounded-full bg-[#3ecf8e] animate-pulse" />
+                99.99% Operational
+              </div>
             </div>
           </div>
 
@@ -738,9 +929,13 @@ export default function Page() {
         <section className="bg-[#0e1116] border border-[#1c232d] rounded-lg grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 overflow-hidden">
           <div className="p-3.5 border-b sm:border-b xl:border-b-0 xl:border-r border-[#1c232d] flex justify-between items-end">
             <div>
-              <div className="font-mono text-[11px] font-semibold tracking-wider uppercase text-[#5d6877]">Active Buffer Ingestion</div>
+              <div className="font-mono text-[11px] font-semibold tracking-wider uppercase text-[#5d6877]">
+                {currentUser ? 'Isolated Events Ingested' : 'Active Buffer Ingestion'}
+              </div>
               <div className="text-2xl font-bold mt-1.5">{dynamicMetrics.total} events</div>
-              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">real-time pipeline</div>
+              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">
+                {currentUser ? 'tenant ledger' : 'live demo pipeline'}
+              </div>
             </div>
             <Spark data={[14, 18, 22, 19, 24, 28, 21, 25, 29, 24, 26, 30, 22, 27]} color="#8ea3ff" />
           </div>
@@ -767,7 +962,7 @@ export default function Page() {
             <div>
               <div className="font-mono text-[11px] font-semibold tracking-wider uppercase text-[#5d6877]">Avg Gateway Latency</div>
               <div className="text-2xl font-bold mt-1.5 text-[#f2a93b]">{dynamicMetrics.avgLat} ms</div>
-              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">live calculated p50</div>
+              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">calculated p50</div>
             </div>
             <Spark data={[24, 22, 25, 23, 24, 26, 22]} color="#f2a93b" />
           </div>
@@ -1058,7 +1253,7 @@ export default function Page() {
                   type="submit"
                   className="bg-[#8ea3ff] text-[#0a0d18] text-xs font-semibold px-4 py-2 rounded inline-flex items-center gap-1.5 hover:bg-[#a5b6ff] transition"
                 >
-                  <Icon name="Zap" size={13} /> Generate Protected Proxy
+                  <Icon name="Zap" size={13} /> {currentUser ? 'Generate Protected Proxy' : 'Sign In to Deploy Live Proxy'}
                 </button>
               </form>
 
@@ -1342,7 +1537,14 @@ export default function Page() {
 
               <div>
                 <button
-                  onClick={() => toast('Alert channels successfully updated and verified.', 'ok')}
+                  onClick={() => {
+                    if (!currentUser) {
+                      setAuthModalOpen(true);
+                      toast('Sign in required to save alert dispatchers.', 'info');
+                      return;
+                    }
+                    toast('Alert channels successfully updated and verified.', 'ok');
+                  }}
                   className="bg-[#8ea3ff] text-[#0a0d18] text-xs font-semibold px-4 py-2 rounded hover:bg-[#a5b6ff] transition"
                 >
                   Save Dispatch Settings
@@ -1438,6 +1640,66 @@ export default function Page() {
         </div>
       )}
 
+      {/* Auth Modal Overlay */}
+      {authModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/75" onClick={() => setAuthModalOpen(false)} />
+          <div className="relative w-full max-w-sm bg-[#0e1116] border border-[#2a3340] rounded-xl p-6 z-10 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-[#1c232d] pb-3">
+              <div>
+                <h3 className="font-bold text-sm text-[#e8ecf1]">Sign In to JumcartFlow</h3>
+                <p className="text-[11px] text-[#8d98a7] mt-0.5">Connect your backend and bind private proxies.</p>
+              </div>
+              <button onClick={() => setAuthModalOpen(false)} className="text-[#5d6877] hover:text-[#e8ecf1]">
+                <Icon name="X" size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => handleOAuthLogin('github')}
+                className="w-full bg-[#141a22] border border-[#2a3340] hover:border-[#8ea3ff] text-xs font-semibold py-2 rounded text-[#e8ecf1] transition flex items-center justify-center gap-2"
+              >
+                Continue with GitHub
+              </button>
+              <button
+                onClick={() => handleOAuthLogin('google')}
+                className="w-full bg-[#141a22] border border-[#2a3340] hover:border-[#8ea3ff] text-xs font-semibold py-2 rounded text-[#e8ecf1] transition flex items-center justify-center gap-2"
+              >
+                Continue with Google
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-[10px] font-mono text-[#5d6877] uppercase py-1">
+              <div className="flex-1 h-px bg-[#1c232d]" />
+              or passwordless magic link
+              <div className="flex-1 h-px bg-[#1c232d]" />
+            </div>
+
+            <form onSubmit={handleMagicLinkLogin} className="space-y-3">
+              <div>
+                <label className="text-[11px] text-[#8d98a7] block mb-1">Developer Work Email</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="founder@startup.com"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  className="w-full bg-[#090b0f] border border-[#2a3340] rounded px-3 py-2 text-xs text-[#e8ecf1] font-mono"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full bg-[#8ea3ff] text-[#0a0d18] text-xs font-semibold py-2 rounded hover:bg-[#a5b6ff] disabled:opacity-40 transition"
+              >
+                {authLoading ? 'Sending link...' : 'Send Magic Sign-In Link'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Floating Toast Alerts */}
       <div className="fixed bottom-5 left-1/2 -translate-x-1/2 flex flex-col gap-2 z-50 pointer-events-none">
         {toasts.map((t) => (
@@ -1445,7 +1707,7 @@ export default function Page() {
             key={t.id}
             className="pointer-events-auto bg-[#141a22] border border-[#2a3340] shadow-2xl px-4 py-2.5 rounded-lg text-xs font-medium flex items-center gap-2"
           >
-            <span className={t.kind === 'ok' ? 'text-[#3ecf8e]' : 'text-[#ff6370]'}>●</span>
+            <span className={t.kind === 'ok' ? 'text-[#3ecf8e]' : t.kind === 'bad' ? 'text-[#ff6370]' : 'text-[#8ea3ff]'}>●</span>
             <span>{t.msg}</span>
           </div>
         ))}
