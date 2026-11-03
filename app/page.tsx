@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 /* ---------- Native SVG Icons ---------- */
 function Icon({ name, size = 16, className = '' }: { name: string; size?: number; className?: string }) {
@@ -170,7 +170,7 @@ function Spark({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-/* ---------- Helpers & Data ---------- */
+/* ---------- Helpers & Provider Map ---------- */
 const rnd = (a: number, b: number) => Math.floor(Math.random() * (b - a + 1)) + a;
 const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 const hex = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join('');
@@ -185,18 +185,29 @@ const ago = (ts: number, now: number) => {
 };
 const host = (u: string) => u.replace(/^https?:\/\//, '');
 
+// Comprehensive Regional & Global Gateways
 const PROV: Record<string, { name: string; letter: string; color: string }> = {
   paystack: { name: 'Paystack', letter: 'P', color: '#4db8f0' },
   nomba: { name: 'Nomba', letter: 'N', color: '#ffb703' },
-  stripe: { name: 'Stripe', letter: 'S', color: '#a597ff' },
+  flutterwave: { name: 'Flutterwave', letter: 'F', color: '#fb923c' },
   monnify: { name: 'Monnify', letter: 'M', color: '#ff9366' },
-  shopify: { name: 'Shopify', letter: 'H', color: '#a9cf72' },
-  github: { name: 'GitHub', letter: 'G', color: '#c9d1d9' }
+  opay: { name: 'OPay', letter: 'O', color: '#10b981' },
+  stripe: { name: 'Stripe', letter: 'S', color: '#a597ff' },
+  shopify: { name: 'Shopify', letter: 'H', color: '#a9cf72' }
 };
 
-const CLS_BY_PROV: Record<string, string> = { paystack: 'schema', nomba: 'schema', monnify: 'timeout', shopify: 'locked', stripe: 'secret' };
+const CLS_BY_PROV: Record<string, string> = {
+  paystack: 'schema',
+  nomba: 'schema',
+  flutterwave: 'schema',
+  monnify: 'timeout',
+  opay: 'timeout',
+  shopify: 'locked',
+  stripe: 'secret'
+};
+
 const RULE: Record<string, string> = {
-  schema: 'paystack-amount-remap',
+  schema: 'paystack-nomba-amount-remap',
   timeout: 'extended-timeout-backoff',
   locked: 'hold-until-healthy',
   secret: 'resign-with-new-secret'
@@ -207,49 +218,49 @@ const DIAG: Record<string, any> = {
     title: 'Payload Schema Mismatch',
     icon: 'Shuffle',
     conf: 97,
-    scope: 'Paystack / Nomba → api.myapp.com/webhooks/payment',
-    diagnosis: (n: number) => `Your endpoint expects data.total_amount in naira instead of kobo. Paystack sends amount in kobo. Intercepted ${n} events with 422.`,
+    scope: 'Paystack / Nomba / Flutterwave → Downstream API',
+    diagnosis: (n: number) => `Your endpoint expects data.total_amount in Naira instead of kobo. Intercepted ${n} events with 422.`,
     patch: [
-      { t: 'ctx', s: 'rule paystack-amount-remap' },
-      { t: 'del', s: '- data.amount          // kobo, integer' },
-      { t: 'add', s: '+ data.total_amount    // naira = data.amount / 100' },
+      { t: 'ctx', s: 'rule paystack-nomba-amount-remap' },
+      { t: 'del', s: '- data.amount          // kobo or string' },
+      { t: 'add', s: '+ data.total_amount    // numeric naira = amount / 100' },
       { t: 'ctx', s: '  keep reference, currency, customer.email' }
     ],
-    steps: ['Testing rule on saved payloads', 'Compiling transform', 'Deploying to 14 edge regions', 'Replaying failed events']
+    steps: ['Testing rule on payloads', 'Compiling edge transform', 'Deploying to 14 edge regions', 'Replaying failed events']
   },
   timeout: {
     title: 'Network Timeout',
     icon: 'Timer',
     conf: 94,
-    scope: 'Monnify → billing.northwind.ng/hooks/monnify',
-    diagnosis: (n: number) => `billing.northwind.ng took longer than 10s to answer ${n} events. Backing off with idempotency is safe.`,
+    scope: 'Monnify / OPay → Downstream Billing Endpoint',
+    diagnosis: (n: number) => `Destination took longer than 10s to answer ${n} events. Backing off with idempotency is safe.`,
     patch: [
       { t: 'ctx', s: 'rule extended-timeout-backoff' },
       { t: 'del', s: '- timeout       10s' },
       { t: 'add', s: '+ timeout       30s' },
       { t: 'add', s: '+ backoff       2s x2, jitter 20%' }
     ],
-    steps: ['Checking idempotency keys', 'Raising timeout to 30s', 'Deploying edge patches', 'Replaying failed events']
+    steps: ['Checking idempotency keys', 'Raising timeout to 30s', 'Deploying edge configuration', 'Replaying failed events']
   },
   locked: {
     title: '503 Gateway Locked',
     icon: 'Lock',
     conf: 91,
-    scope: 'Shopify → orders.kola-store.com/api/shopify/hooks',
-    diagnosis: (n: number) => `Destination is in maintenance mode (503). Jumcart holds these ${n} events until health check returns 200.`,
+    scope: 'Shopify → Store Webhook Listener',
+    diagnosis: (n: number) => `Destination in maintenance mode (503). Jumcart holds these ${n} events until health check returns 200.`,
     patch: [
       { t: 'ctx', s: 'rule hold-until-healthy' },
       { t: 'add', s: '+ on 503      hold events in queue (max 24h)' },
       { t: 'add', s: '+ probe       GET /health every 30s' }
     ],
-    steps: ['Probing health check URL', 'Creating hold queue', 'Deploying edge configuration', 'Releasing held events']
+    steps: ['Probing health check URL', 'Creating hold queue', 'Deploying edge patches', 'Releasing held events']
   },
   secret: {
     title: 'Signature Secret Rotated',
     icon: 'KeyRound',
     conf: 96,
     scope: 'Stripe → api.myapp.com/webhooks/stripe',
-    diagnosis: (n: number) => `Signature secret changed on Oct 28. Refused ${n} valid events. Re-signing forwarded requests automatically.`,
+    diagnosis: (n: number) => `Webhook signing secret rotated. Refused ${n} valid events. Re-signing forwarded requests automatically.`,
     patch: [
       { t: 'ctx', s: 'rule resign-with-new-secret' },
       { t: 'del', s: '- stripe-signature  v1=<signed with old_secret>' },
@@ -262,15 +273,18 @@ const DIAG: Record<string, any> = {
 const SANDBOX_TEMPLATES: Record<string, any> = {
   paystack: {
     event: 'charge.success',
-    data: { id: 48920184, reference: 'PSK_LIVE_8392', amount: 500000, currency: 'NGN', customer: { email: 'client@jumcart.com' } }
+    data: { id: 48920184, reference: 'PSK_LIVE_8392', amount: 500000, currency: 'NGN', customer: { email: 'client@business.ng' } }
   },
   nomba: {
     event: 'payment.success',
     data: { orderReference: 'NMB_REF_1829', amount: '25000', currency: 'NGN', customer: { email: 'buyer@business.ng' } }
   },
-  haildesk: {
-    event: 'ticket.created',
-    data: { ticket_id: 'hd_9921', priority: 'urgent', customer: { email: 'support@haildesk.com', name: 'Mayowa' }, text: 'Inbound customer webhook' }
+  flutterwave: {
+    event: 'charge.completed',
+    data: { id: 891244, tx_ref: 'FLW_MOCK_9921', amount: 45000, currency: 'NGN', customer: { email: 'user@flutterwave.com' } }
+  },
+  opay: {
+    payload: { reference: 'OPAY_TX_7721', amount: '12000', status: 'SUCCESS', currency: 'NGN', phone: '+2348012345678' }
   },
   monnify: {
     eventType: 'SUCCESSFUL_TRANSACTION',
@@ -284,23 +298,24 @@ const SANDBOX_TEMPLATES: Record<string, any> = {
 };
 
 const EP_SEED = [
-  { id: 'ep1', name: 'Payments', provider: 'paystack', dest: 'https://api.myapp.com/webhooks/payment', proxy: 'gonze_live_839201', active: true, ev24h: 18402, rate: 99.91 },
-  { id: 'ep2', name: 'Haildesk Support Hooks', provider: 'paystack', dest: 'https://haildesk.com/api/webhooks/incoming', proxy: 'haildesk_prod_01', active: true, ev24h: 5240, rate: 99.98 },
-  { id: 'ep3', name: 'Nomba Ingestion', provider: 'nomba', dest: 'https://httpbin.org/post', proxy: 'gonze_live_612984', active: true, ev24h: 4210, rate: 99.85 },
-  { id: 'ep4', name: 'Billing transfers', provider: 'monnify', dest: 'https://billing.northwind.ng/hooks/monnify', proxy: 'gonze_live_702144', active: true, ev24h: 6120, rate: 99.74 },
-  { id: 'ep5', name: 'Store orders', provider: 'shopify', dest: 'https://orders.kola-store.com/api/shopify/hooks', proxy: 'gonze_live_451907', active: true, ev24h: 9377, rate: 99.62 },
-  { id: 'ep6', name: 'Subscriptions', provider: 'stripe', dest: 'https://api.myapp.com/webhooks/stripe', proxy: 'gonze_live_118563', active: true, ev24h: 11890, rate: 99.88 }
+  { id: 'ep1', name: 'Paystack Ingestion Gateway', provider: 'paystack', dest: 'https://api.myapp.com/webhooks/paystack', proxy: 'gonze_live_839201', active: true },
+  { id: 'ep2', name: 'Nomba Merchant Stream', provider: 'nomba', dest: 'https://api.myapp.com/webhooks/nomba', proxy: 'gonze_live_612984', active: true },
+  { id: 'ep3', name: 'Flutterwave Ingestion Relay', provider: 'flutterwave', dest: 'https://api.myapp.com/webhooks/flw', proxy: 'gonze_live_551029', active: true },
+  { id: 'ep4', name: 'Monnify Direct Transfer', provider: 'monnify', dest: 'https://billing.northwind.ng/hooks/monnify', proxy: 'gonze_live_702144', active: true },
+  { id: 'ep5', name: 'OPay Virtual Accounts', provider: 'opay', dest: 'https://api.myapp.com/webhooks/opay', proxy: 'gonze_live_229104', active: true },
+  { id: 'ep6', name: 'Shopify Store Checkout', provider: 'shopify', dest: 'https://orders.kola-store.com/api/shopify/hooks', proxy: 'gonze_live_451907', active: true },
+  { id: 'ep7', name: 'Stripe Subscriptions', provider: 'stripe', dest: 'https://api.myapp.com/webhooks/stripe', proxy: 'gonze_live_118563', active: true }
 ];
 
 function seedEvents() {
   const now = Date.now();
   const out: any[] = [];
-  const provs = ['paystack', 'nomba', 'stripe', 'monnify', 'shopify', 'github'];
+  const provs = ['paystack', 'nomba', 'flutterwave', 'monnify', 'opay', 'shopify', 'stripe'];
   for (let i = 0; i < 48; i++) {
     const p = provs[i % provs.length];
     const ep = EP_SEED.find((e) => e.provider === p) || EP_SEED[0];
-    const isFail = i === 4 || i === 6 || i === 9 || i === 13 || i === 16;
-    const isHealed = i === 8 || i === 21;
+    const isFail = i === 3 || i === 7 || i === 11 || i === 15 || i === 19;
+    const isHealed = i === 8 || i === 22;
     const cls = CLS_BY_PROV[p] || 'schema';
     const amt = pick([45000, 75000, 120000, 250000]);
     out.push({
@@ -321,7 +336,7 @@ function seedEvents() {
       },
       body: {
         event: 'charge.success',
-        data: { id: 'tx_' + hex(8), amount: amt, currency: 'NGN', customer: { email: 'client@jumcart.com' } }
+        data: { id: 'tx_' + hex(8), amount: amt, currency: 'NGN', customer: { email: 'client@business.ng' } }
       },
       resp: {
         code: isFail ? 422 : 200,
@@ -344,7 +359,7 @@ export default function Page() {
   const [now, setNow] = useState(Date.now());
   const [toasts, setToasts] = useState<any[]>([]);
 
-  // Legal & Support Modal State
+  // Legal Modal State
   const [activeModal, setActiveModal] = useState<'privacy' | 'terms' | 'sla' | null>(null);
 
   // Filtering
@@ -371,10 +386,10 @@ export default function Page() {
     secret: { status: 'pending', step: 0 }
   });
 
-  // Replay Console
+  // Replay State
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<any[]>([
-    { id: 1, k: 'dim', t: 'jumcart-cli 2.4.1 · replay engine online. Ready to dispatch.' }
+    { id: 1, k: 'dim', t: 'jumcart-cli 2.4.1 · replay engine online. Monitoring active channels.' }
   ]);
   const cancelReplay = useRef(false);
 
@@ -383,19 +398,7 @@ export default function Page() {
     { id: 'k1', name: 'Production Ingestion Key', env: 'live', value: 'jm_live_sk_' + hex(32), created: 'Nov 03, 2026', shown: false },
     { id: 'k2', name: 'Staging Ingestion Key', env: 'test', value: 'jm_test_sk_' + hex(32), created: 'Oct 28, 2026', shown: false }
   ]);
-  const [settings, setSettings] = useState({ max: 5, base: 2, mult: 2, jitter: true });
-
-  // Metrics
-  const [metrics, setMetrics] = useState({
-    total: 2418920,
-    rev: 48210,
-    lat: 24,
-    rate: 99.98,
-    histTotal: [14, 18, 22, 19, 24, 28, 21, 25, 29, 24, 26, 30, 22, 27],
-    histRate: [99.97, 99.98, 99.99, 99.97, 99.98, 99.99, 99.98],
-    histRev: [47900, 48000, 48100, 48150, 48210],
-    histLat: [24, 22, 25, 23, 24, 26, 22]
-  });
+  const [settings] = useState({ max: 5, base: 2, mult: 2, jitter: true });
 
   const toast = useCallback((msg: string, kind = 'info') => {
     const id = Date.now() + Math.random();
@@ -421,7 +424,7 @@ export default function Page() {
       const isFail = Math.random() < 0.08;
       const cls = CLS_BY_PROV[ep.provider] || 'schema';
       const isHealed = isFail && diags[cls]?.status === 'applied';
-      const amt = pick([45000, 75000, 120000]);
+      const amt = pick([45000, 75000, 120000, 300000]);
 
       const newEv = {
         id: 'evt_' + hex(10),
@@ -439,11 +442,34 @@ export default function Page() {
         attempts: [{ n: 1, code: isFail && !isHealed ? 422 : 200, text: isFail && !isHealed ? 'Unprocessable' : 'OK', ms: rnd(18, 35), ok: !isFail || isHealed }]
       };
 
-      setEvents((prev) => [newEv, ...prev].slice(0, 70));
+      setEvents((prev) => [newEv, ...prev].slice(0, 80));
     }, 3200);
 
     return () => clearInterval(interval);
   }, [live, endpoints, diags]);
+
+  /* ---------- Fully Dynamic Live Metrics ---------- */
+  const dynamicMetrics = useMemo(() => {
+    const totalCount = events.length;
+    const failedCount = events.filter((e) => e.status === 'failed').length;
+    const okCount = events.filter((e) => e.status === 'ok' || e.status === 'healed').length;
+    const rate = totalCount > 0 ? (okCount / totalCount) * 100 : 100;
+    
+    // Total revenue recovered from healed payloads
+    const revSaved = events.filter((e) => e.status === 'healed').reduce((sum, e) => sum + (e.usd || 0), 0);
+
+    // Dynamic latency average
+    const totalLat = events.reduce((sum, e) => sum + (e.latency || 24), 0);
+    const avgLat = totalCount > 0 ? Math.round(totalLat / totalCount) : 24;
+
+    return {
+      total: totalCount,
+      rate: rate.toFixed(2),
+      revSaved: Math.round(revSaved),
+      avgLat: avgLat,
+      failedCount: failedCount
+    };
+  }, [events]);
 
   // Export Events to CSV
   const handleExportCSV = () => {
@@ -471,7 +497,7 @@ export default function Page() {
     setSbPayload(JSON.stringify(tmpl, null, 2));
   };
 
-  // Fire Real Sandbox Webhook
+  // Fire Sandbox Webhook
   const handleFireSandbox = async () => {
     setSbSending(true);
     let parsed: any;
@@ -493,12 +519,11 @@ export default function Page() {
       toast(`Webhook dispatched to /api/p/${sbTargetProxy} (${data.status || '200'})`, 'ok');
       setTab('stream');
     } catch {
-      // Fallback local injection if offline
       const mockEv = {
         id: 'evt_' + hex(10),
         provider: sbProvider,
         type: parsed.event || parsed.type || 'webhook.received',
-        dest: 'https://httpbin.org/post',
+        dest: 'https://api.myapp.com/webhooks/incoming',
         ts: Date.now(),
         usd: 250,
         status: 'ok',
@@ -517,7 +542,7 @@ export default function Page() {
     }
   };
 
-  // Handle Endpoint Generation
+  // Generate Endpoint
   const handleGenerateEndpoint = (e: React.FormEvent) => {
     e.preventDefault();
     if (!genUrl.startsWith('http')) {
@@ -530,16 +555,14 @@ export default function Page() {
       provider: genProv,
       dest: genUrl,
       proxy: 'gonze_live_' + digits(6),
-      active: true,
-      ev24h: 0,
-      rate: 100
+      active: true
     };
     setEndpoints((prev) => [newEp, ...prev]);
     setActiveProxy(newEp);
     toast('Proxy generated successfully.', 'ok');
   };
 
-  // Handle AI Patch Approval
+  // Approve AI Patch
   const handleApprovePatch = async (cls: string) => {
     setDiags((prev) => ({ ...prev, [cls]: { status: 'applying', step: 0 } }));
     for (let i = 0; i < 4; i++) {
@@ -547,23 +570,20 @@ export default function Page() {
       await sleep(550);
     }
 
-    let recovered = 0;
     setEvents((prev) =>
       prev.map((e) => {
         if (e.cls === cls && e.status === 'failed') {
-          recovered += e.usd;
           return { ...e, status: 'healed', note: `Auto-repaired by ${RULE[cls]} and delivered.` };
         }
         return e;
       })
     );
 
-    setMetrics((m) => ({ ...m, rev: m.rev + recovered }));
     setDiags((prev) => ({ ...prev, [cls]: { status: 'applied', step: 4 } }));
     toast(`Rule ${RULE[cls]} is now active on 14 edge regions.`, 'ok');
   };
 
-  // Handle Replay Engine
+  // Replay Engine
   const handleRunReplay = async (targetIds: string[]) => {
     if (running || !targetIds.length) return;
     setRunning(true);
@@ -607,11 +627,10 @@ export default function Page() {
 
   const openEv = events.find((e) => e.id === openId);
   const failedEvents = events.filter((e) => e.status === 'failed');
-  const failedCount = failedEvents.length;
 
   return (
     <div className="min-h-screen bg-[#090b0f] text-[#e8ecf1] font-sans antialiased text-[14px]">
-      {/* Header */}
+      {/* Top Header */}
       <header className="border-b border-[#1c232d] bg-[#090b0f]">
         <div className="max-w-[1320px] mx-auto px-4">
           <div className="flex flex-wrap items-center justify-between gap-4 py-3">
@@ -639,7 +658,7 @@ export default function Page() {
               { id: 'stream', label: 'Live Stream', icon: 'Activity' },
               { id: 'sandbox', label: 'Interactive Sandbox', icon: 'FlaskConical' },
               { id: 'endpoints', label: 'Endpoints & Proxies', icon: 'Webhook' },
-              { id: 'healing', label: 'Self-Healing AI Logs', icon: 'Sparkles', count: failedCount },
+              { id: 'healing', label: 'Self-Healing AI Logs', icon: 'Sparkles', count: dynamicMetrics.failedCount },
               { id: 'replay', label: 'Replay Engine', icon: 'RotateCcw' },
               { id: 'keys', label: 'Settings & API Keys', icon: 'Settings' }
             ].map((t) => (
@@ -667,42 +686,42 @@ export default function Page() {
 
       {/* Main Content */}
       <main className="max-w-[1320px] mx-auto px-4 pt-5 space-y-4">
-        {/* Metric Strip */}
+        {/* Dynamic Metric Strip */}
         <section className="bg-[#0e1116] border border-[#1c232d] rounded-lg grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 overflow-hidden">
           <div className="p-3.5 border-b sm:border-b xl:border-b-0 xl:border-r border-[#1c232d] flex justify-between items-end">
             <div>
-              <div className="font-mono text-[11px] font-semibold tracking-wider uppercase text-[#5d6877]">Events Processed</div>
-              <div className="text-2xl font-bold mt-1.5">{metrics.total.toLocaleString()}</div>
-              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">last 30 days</div>
+              <div className="font-mono text-[11px] font-semibold tracking-wider uppercase text-[#5d6877]">Active Buffer Ingestion</div>
+              <div className="text-2xl font-bold mt-1.5">{dynamicMetrics.total} events</div>
+              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">real-time pipeline</div>
             </div>
-            <Spark data={metrics.histTotal} color="#8ea3ff" />
+            <Spark data={[14, 18, 22, 19, 24, 28, 21, 25, 29, 24, 26, 30, 22, 27]} color="#8ea3ff" />
           </div>
 
           <div className="p-3.5 border-b sm:border-b xl:border-b-0 xl:border-r border-[#1c232d] flex justify-between items-end">
             <div>
               <div className="font-mono text-[11px] font-semibold tracking-wider uppercase text-[#5d6877]">Success Rate</div>
-              <div className="text-2xl font-bold mt-1.5 text-[#3ecf8e]">{metrics.rate.toFixed(2)}%</div>
-              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">{failedCount} open failures</div>
+              <div className="text-2xl font-bold mt-1.5 text-[#3ecf8e]">{dynamicMetrics.rate}%</div>
+              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">{dynamicMetrics.failedCount} open failures</div>
             </div>
-            <Spark data={metrics.histRate} color="#3ecf8e" />
+            <Spark data={[99.97, 99.98, 99.99, 99.97, 99.98, 99.99, 99.98]} color="#3ecf8e" />
           </div>
 
           <div className="p-3.5 border-b sm:border-b-0 xl:border-r border-[#1c232d] flex justify-between items-end">
             <div>
-              <div className="font-mono text-[11px] font-semibold tracking-wider uppercase text-[#5d6877]">Revenue Saved</div>
-              <div className="text-2xl font-bold mt-1.5 text-[#4cc9f0]">{money(metrics.rev)}</div>
-              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">recovered from dropped events</div>
+              <div className="font-mono text-[11px] font-semibold tracking-wider uppercase text-[#5d6877]">Revenue Recovered</div>
+              <div className="text-2xl font-bold mt-1.5 text-[#4cc9f0]">${dynamicMetrics.revSaved.toLocaleString()}</div>
+              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">via autonomous patches</div>
             </div>
-            <Spark data={metrics.histRev} color="#4cc9f0" />
+            <Spark data={[47900, 48000, 48100, 48150, 48210]} color="#4cc9f0" />
           </div>
 
           <div className="p-3.5 flex justify-between items-end">
             <div>
               <div className="font-mono text-[11px] font-semibold tracking-wider uppercase text-[#5d6877]">Avg Gateway Latency</div>
-              <div className="text-2xl font-bold mt-1.5 text-[#f2a93b]">{metrics.lat} ms</div>
-              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">p50, edge regions</div>
+              <div className="text-2xl font-bold mt-1.5 text-[#f2a93b]">{dynamicMetrics.avgLat} ms</div>
+              <div className="font-mono text-[11.5px] text-[#8d98a7] mt-1">live calculated p50</div>
             </div>
-            <Spark data={metrics.histLat} color="#f2a93b" />
+            <Spark data={[24, 22, 25, 23, 24, 26, 22]} color="#f2a93b" />
           </div>
         </section>
 
@@ -736,10 +755,10 @@ export default function Page() {
                     setTab('replay');
                     handleRunReplay(failedIds);
                   }}
-                  disabled={failedCount === 0}
+                  disabled={dynamicMetrics.failedCount === 0}
                   className="inline-flex items-center gap-1.5 text-xs bg-[#8ea3ff] text-[#0a0d18] px-3 py-1.5 rounded font-semibold hover:bg-[#a5b6ff] disabled:opacity-40 transition"
                 >
-                  <Icon name="RotateCcw" size={13} /> Replay Failed ({failedCount})
+                  <Icon name="RotateCcw" size={13} /> Replay Failed ({dynamicMetrics.failedCount})
                 </button>
               </div>
             </div>
@@ -763,7 +782,7 @@ export default function Page() {
                 onChange={(e) => setFProv(e.target.value)}
                 className="bg-[#090b0f] border border-[#2a3340] text-xs rounded px-2.5 py-1 text-[#e8ecf1]"
               >
-                <option value="all">All Sources</option>
+                <option value="all">All Gateways</option>
                 {Object.keys(PROV).map((k) => (
                   <option key={k} value={k}>{PROV[k].name}</option>
                 ))}
@@ -793,7 +812,7 @@ export default function Page() {
                   <tr className="border-b border-[#1c232d] bg-[#0e1116] font-mono text-[11px] text-[#5d6877] uppercase">
                     <th className="py-2.5 px-3.5">Status</th>
                     <th className="py-2.5 px-3.5">Event Type</th>
-                    <th className="py-2.5 px-3.5">Source</th>
+                    <th className="py-2.5 px-3.5">Gateway Provider</th>
                     <th className="py-2.5 px-3.5">Destination URL</th>
                     <th className="py-2.5 px-3.5 text-right">Latency</th>
                     <th className="py-2.5 px-3.5">Timestamp</th>
@@ -857,7 +876,7 @@ export default function Page() {
                     Select a template or craft custom JSON to test gateway ingestion and auto-healing.
                   </p>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {Object.keys(SANDBOX_TEMPLATES).map((prov) => (
                     <button
                       key={prov}
@@ -868,7 +887,7 @@ export default function Page() {
                           : 'border-[#2a3340] text-[#8d98a7] hover:text-[#e8ecf1]'
                       }`}
                     >
-                      {prov.charAt(0).toUpperCase() + prov.slice(1)}
+                      {PROV[prov]?.name || prov}
                     </button>
                   ))}
                 </div>
@@ -886,7 +905,7 @@ export default function Page() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#8d98a7]">Target Proxy:</span>
+                  <span className="text-xs text-[#8d98a7]">Target Ingestion Proxy:</span>
                   <select
                     value={sbTargetProxy}
                     onChange={(e) => setSbTargetProxy(e.target.value)}
@@ -909,16 +928,16 @@ export default function Page() {
             </div>
 
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
-              <h2 className="font-bold text-base">Sandbox Testing Instructions</h2>
+              <h2 className="font-bold text-base">Payment Gateway Verification</h2>
               <div className="text-xs text-[#8d98a7] space-y-3 leading-relaxed">
                 <p>
-                  1. <strong>Select a Template:</strong> Click on <code className="text-[#e8ecf1]">Paystack</code>, <code className="text-[#e8ecf1]">Nomba</code>, or <code className="text-[#e8ecf1]">Haildesk</code> to populate a production-grade webhook payload.
+                  1. <strong>Select Any Provider:</strong> Click on <code className="text-[#e8ecf1]">Paystack</code>, <code className="text-[#e8ecf1]">Nomba</code>, <code className="text-[#e8ecf1]">Flutterwave</code>, or <code className="text-[#e8ecf1]">OPay</code>.
                 </p>
                 <p>
-                  2. <strong>Simulate Schema Drift:</strong> Try changing numeric amounts to strings (e.g., <code className="text-[#ff6370]">&quot;500000&quot;</code>) to watch the self-healing engine catch the 422 error and suggest a transform rule.
+                  2. <strong>Test Schema Transformations:</strong> Alter the amount into an unformatted string (e.g. <code className="text-[#ff6370]">&quot;750000&quot;</code>) to watch the edge proxy intercept and deploy automated field conversions.
                 </p>
                 <p>
-                  3. <strong>Immediate Inspection:</strong> When fired, the event is immediately pushed to the <strong>Live Stream</strong> and written into your database.
+                  3. <strong>Immediate Ledger Audit:</strong> Dispatched events immediately stream into the <strong>Live Stream</strong> and reflect on your top metric counters.
                 </p>
               </div>
             </div>
@@ -931,7 +950,7 @@ export default function Page() {
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
               <div>
                 <h2 className="font-bold text-base">Drop-In Proxy Generator</h2>
-                <p className="text-xs text-[#8d98a7] mt-1">Route webhooks through Jumcart for automated retries and schema repair.</p>
+                <p className="text-xs text-[#8d98a7] mt-1">Route payment webhooks through Jumcart for automated buffering & repair.</p>
               </div>
 
               <form onSubmit={handleGenerateEndpoint} className="space-y-3">
@@ -945,7 +964,7 @@ export default function Page() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-[#8d98a7] block mb-1">Who Sends the Webhooks</label>
+                  <label className="text-xs text-[#8d98a7] block mb-1">Payment Provider</label>
                   <select
                     value={genProv}
                     onChange={(e) => setGenProv(e.target.value)}
@@ -967,7 +986,7 @@ export default function Page() {
               <hr className="border-[#1c232d]" />
 
               <div className="space-y-2">
-                <span className="font-mono text-xs text-[#5d6877] uppercase block">Assigned Proxy URL</span>
+                <span className="font-mono text-xs text-[#5d6877] uppercase block">Assigned Ingestion Route</span>
                 <div className="flex items-center gap-2">
                   <div className="p-2.5 bg-[#090b0f] border border-[#1c232d] rounded text-xs font-mono text-[#8ea3ff] flex-1 truncate">
                     https://jumcart-gateway.vercel.app/api/p/{activeProxy.proxy}
@@ -984,13 +1003,13 @@ export default function Page() {
 
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="font-bold text-base">Active Endpoints ({endpoints.length})</h2>
+                <h2 className="font-bold text-base">Active Gateways ({endpoints.length})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs font-mono">
                   <thead>
                     <tr className="border-b border-[#1c232d] text-[#5d6877] uppercase text-[11px]">
-                      <th className="py-2 px-3">Name</th>
+                      <th className="py-2 px-3">Gateway</th>
                       <th className="py-2 px-3">Proxy Inbound</th>
                       <th className="py-2 px-3">Target</th>
                       <th className="py-2 px-3">Status</th>
@@ -1069,7 +1088,7 @@ export default function Page() {
                     <div className="flex items-center gap-3">
                       {st.status === 'applied' ? (
                         <span className="text-xs text-[#3ecf8e] inline-flex items-center gap-1 font-semibold">
-                          <Icon name="ShieldCheck" size={14} /> Rule deployed to edge. Future incoming events are automatically normalized.
+                          <Icon name="ShieldCheck" size={14} /> Rule deployed to edge router. Normalizing future mismatches automatically.
                         </span>
                       ) : (
                         <button
@@ -1094,7 +1113,7 @@ export default function Page() {
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="font-bold text-base">Dead-Letter Queue</h2>
-                <span className="font-mono text-xs text-[#5d6877]">{failedCount} Failed</span>
+                <span className="font-mono text-xs text-[#5d6877]">{dynamicMetrics.failedCount} Failed</span>
               </div>
 
               <div className="flex gap-2">
@@ -1103,10 +1122,10 @@ export default function Page() {
                     const ids = failedEvents.map((e) => e.id);
                     handleRunReplay(ids);
                   }}
-                  disabled={running || failedCount === 0}
+                  disabled={running || dynamicMetrics.failedCount === 0}
                   className="bg-[#8ea3ff] text-[#0a0d18] text-xs font-semibold px-3 py-1.5 rounded inline-flex items-center gap-1 hover:bg-[#a5b6ff] disabled:opacity-40"
                 >
-                  <Icon name="RotateCcw" size={13} /> Replay All Failed ({failedCount})
+                  <Icon name="RotateCcw" size={13} /> Replay All Failed ({dynamicMetrics.failedCount})
                 </button>
                 {running && (
                   <button
@@ -1261,7 +1280,7 @@ export default function Page() {
               <span className="text-sm font-bold text-[#e8ecf1]">JumcartFlow</span>
             </div>
             <p className="text-[12px] text-[#5d6877] max-w-sm leading-relaxed">
-              Autonomous self-healing webhook proxy and zero-drop ingestion buffer. Eliminating lost revenue and dropped integrations across African and global payment rails.
+              Autonomous self-healing webhook gateway and zero-drop ingestion buffer. Eliminating lost revenue and dropped integrations across African and global payment rails.
             </p>
             <div className="font-mono text-[11px] text-[#5d6877]">
               Operated by JumcartFlow
@@ -1282,7 +1301,7 @@ export default function Page() {
             <h4 className="font-mono uppercase text-[11px] text-[#e8ecf1] font-semibold mb-3">Trust & Reliability</h4>
             <ul className="space-y-2 text-[12px]">
               <li><button onClick={() => setActiveModal('sla')} className="hover:text-[#e8ecf1]">99.9% Edge SLA</button></li>
-              <li><span className="text-[#3ecf8e] text-[11px] font-mono">TLS 1.3 / AES-256 Verified</span></li>
+              <li><span className="text-[#3ecf8e] text-[11px] font-mono">TLS 1.3 / AES-256 Storage</span></li>
               <li><a href="mailto:support@jumcart.com" className="hover:text-[#e8ecf1]">Incident Escalation</a></li>
             </ul>
           </div>
