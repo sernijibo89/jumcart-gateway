@@ -1,38 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  Zap,
-  Activity,
-  RotateCcw,
-  Sparkles,
-  Settings,
-  X,
-  ArrowRight,
-  AlertTriangle,
-  ShieldCheck,
-  Check,
-  CheckCircle2,
-  Copy,
-  Pause,
-  Play,
-  Search,
-  FlaskConical,
-  Trash2,
-  Eye,
-  EyeOff,
-  Plus,
-  RefreshCw,
-  Undo2,
-  Square,
-  Terminal,
-  Bot,
-  Shuffle,
-  Timer,
-  Lock,
-  KeyRound,
-  Info
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -40,12 +8,104 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
+/* ---------- Native SVG Icons (No Lucide dependency) ---------- */
+function Icon({ name, size = 16, className = '' }: { name: string; size?: number; className?: string }) {
+  const s = size;
+  const paths: Record<string, React.ReactNode> = {
+    activity: <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />,
+    zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />,
+    sparkles: (
+      <>
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        <path d="M5 3v4" />
+        <path d="M19 17v4" />
+        <path d="M3 5h4" />
+        <path d="M17 19h4" />
+      </>
+    ),
+    rotateCcw: (
+      <>
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </>
+    ),
+    settings: (
+      <>
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ),
+    x: (
+      <>
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </>
+    ),
+    check: <polyline points="20 6 9 17 4 12" />,
+    info: (
+      <>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 16v-4" />
+        <path d="M12 8h.01" />
+      </>
+    ),
+    copy: (
+      <>
+        <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+      </>
+    ),
+    shuffle: (
+      <>
+        <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" />
+        <path d="m18 2 4 4-4 4" />
+        <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2" />
+        <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8" />
+        <path d="m18 14 4 4-4 4" />
+      </>
+    ),
+    timer: (
+      <>
+        <line x1="10" x2="14" y1="2" y2="2" />
+        <line x1="12" x2="15" y1="14" y2="11" />
+        <circle cx="12" cy="14" r="8" />
+      </>
+    ),
+    lock: (
+      <>
+        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </>
+    ),
+    key: (
+      <>
+        <path d="m21 2-2 2m-1.5 1.5L16 7l4 4 1.5-1.5m-3-3L20 8" />
+        <circle cx="7.5" cy="15.5" r="5.5" />
+      </>
+    )
+  };
+
+  return (
+    <svg
+      width={s}
+      height={s}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      {paths[name] || paths.activity}
+    </svg>
+  );
+}
+
 /* ---------- helpers ---------- */
 const rnd = (a: number, b: number) => Math.floor(Math.random() * (b - a + 1)) + a;
-const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 const hex = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-const digits = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 10).toString()).join('');
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const fmtMs = (ms: number | null) => (ms == null ? '—' : ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : Math.round(ms) + ' ms');
 const money = (n: number) => '$' + Math.round(n).toLocaleString('en-US');
 const clock = (ts: number) => new Date(ts).toLocaleTimeString('en-GB', { hour12: false });
@@ -63,67 +123,38 @@ const PROV: Record<string, { name: string; letter: string; color: string }> = {
   github: { name: 'GitHub', letter: 'G', color: '#c9d1d9' }
 };
 
-const RULE: Record<string, string> = {
-  schema: 'paystack-amount-remap',
-  timeout: 'extended-timeout-backoff',
-  locked: 'hold-until-healthy',
-  secret: 'resign-with-new-secret'
-};
-
 const DIAG: Record<string, any> = {
   schema: {
     title: 'Payload Schema Mismatch',
-    icon: Shuffle,
+    icon: 'shuffle',
     conf: 97,
     scope: 'Paystack → api.myapp.com/webhooks/payment',
-    diagnosis: (n: number) => `Your endpoint now expects data.total_amount in naira instead of kobo. Paystack still sends data.amount in kobo. Your server rejected ${n} events with 422.`,
-    patch: [
-      { t: 'ctx', s: 'rule paystack-amount-remap' },
-      { t: 'del', s: '- data.amount          // kobo' },
-      { t: 'add', s: '+ data.total_amount    // naira = data.amount / 100' },
-      { t: 'ctx', s: '  keep reference, currency, customer.email' }
-    ],
-    steps: ['Testing rule on payloads', 'Compiling transform', 'Deploying edge patches', 'Replaying failed events']
+    diagnosis: (n: number) => `Your endpoint expects total_amount in naira instead of kobo. Paystack sends amount in kobo. Intercepted ${n} events.`,
+    patch: ['rule paystack-amount-remap', '- data.amount (kobo)', '+ data.total_amount (naira = amount / 100)']
   },
   timeout: {
     title: 'Network Timeout',
-    icon: Timer,
+    icon: 'timer',
     conf: 94,
     scope: 'Monnify → billing.northwind.ng/hooks/monnify',
-    diagnosis: (n: number) => `billing.northwind.ng took longer than 10 seconds to answer ${n} events. Backing off and retrying is safe via idempotency keys.`,
-    patch: [
-      { t: 'ctx', s: 'rule extended-timeout-backoff' },
-      { t: 'del', s: '- timeout       10s' },
-      { t: 'add', s: '+ timeout       30s' },
-      { t: 'add', s: '+ circuit_break open after 5 failures in 60s' }
-    ],
-    steps: ['Checking idempotency keys', 'Raising timeout to 30s', 'Deploying edge patches', 'Replaying failed events']
+    diagnosis: (n: number) => `Endpoint took longer than 10s. Backing off and retrying safely via idempotency keys.`,
+    patch: ['rule extended-timeout-backoff', '- timeout 10s', '+ timeout 30s', '+ circuit break after 5 fails']
   },
   locked: {
     title: '503 Gateway Locked',
-    icon: Lock,
+    icon: 'lock',
     conf: 91,
     scope: 'Shopify → orders.kola-store.com/api/shopify/hooks',
-    diagnosis: (n: number) => `Destination is in maintenance mode and answers 503. Jumcart holds these ${n} events in queue until health check returns 200.`,
-    patch: [
-      { t: 'ctx', s: 'rule hold-until-healthy' },
-      { t: 'add', s: '+ on 503 hold in queue (24h)' },
-      { t: 'add', s: '+ probe GET /health every 30s' }
-    ],
-    steps: ['Probing health check URL', 'Creating hold queue', 'Deploying edge patches', 'Releasing held events']
+    diagnosis: (n: number) => `Destination in maintenance mode. Holding events in queue until health check returns 200.`,
+    patch: ['rule hold-until-healthy', '+ on 503 hold in queue', '+ probe GET /health every 30s']
   },
   secret: {
     title: 'Signature Secret Rotated',
-    icon: KeyRound,
+    icon: 'key',
     conf: 96,
     scope: 'Stripe → api.myapp.com/webhooks/stripe',
-    diagnosis: (n: number) => `Webhook secret changed. Old secret no longer matches. Forwarded requests can be resigned with your active key.`,
-    patch: [
-      { t: 'ctx', s: 'rule resign-with-new-secret' },
-      { t: 'del', s: '- stripe-signature  v1=<signed with old_secret>' },
-      { t: 'add', s: '+ stripe-signature  v1=<signed with new_secret>' }
-    ],
-    steps: ['Verifying secret', 'Resigning payloads', 'Deploying edge patches', 'Replaying failed events']
+    diagnosis: (n: number) => `Signature secret changed. Re-signing forwarded requests with active secret.`,
+    patch: ['rule resign-with-new-secret', '- stripe-signature old_secret', '+ stripe-signature active_secret']
   }
 };
 
@@ -135,7 +166,7 @@ const EP_SEED = [
   { id: 'ep5', name: 'Deploy hooks', provider: 'github', dest: 'https://ci.myapp.com/hooks/github', proxy: 'gonze_live_990231', active: true, ev24h: 2144, rate: 100 }
 ];
 
-/* ---------- Sparkline ---------- */
+/* ---------- Sparkline Component ---------- */
 function Spark({ data, color }: { data: number[]; color: string }) {
   const w = 116, h = 34, pd = 3;
   const min = Math.min(...data), max = Math.max(...data), r = max - min || 1;
@@ -156,27 +187,13 @@ function Spark({ data, color }: { data: number[]; color: string }) {
 
 export default function JumcartApp() {
   const [tab, setTab] = useState<'stream' | 'endpoints' | 'healing' | 'replay' | 'keys'>('stream');
-  const [endpoints, setEndpoints] = useState(EP_SEED);
+  const [endpoints] = useState(EP_SEED);
   const [events, setEvents] = useState<any[]>([]);
-  const [live, setLive] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const [toasts, setToasts] = useState<any[]>([]);
-  const [rsel, setRsel] = useState<Record<string, boolean>>({});
-  const [running, setRunning] = useState(false);
-  const [logs, setLogs] = useState<any[]>([
-    { id: 1, k: 'dim', t: 'jumcart-cli 2.4.1 · replay engine ready. Select events and run replay.' }
-  ]);
-  const [diags, setDiags] = useState<Record<string, any>>({
-    schema: { status: 'pending', step: 0 },
-    timeout: { status: 'pending', step: 0 },
-    locked: { status: 'pending', step: 0 },
-    secret: { status: 'pending', step: 0 }
-  });
-  const [settings, setSettings] = useState({ max: 5, base: 2, mult: 2, jitter: true, timeout: 10, auto: false });
 
-  // 30-point metric state
-  const [metrics, setMetrics] = useState({
+  const [metrics] = useState({
     total: 2418920,
     rev: 48210,
     lat: 24,
@@ -210,15 +227,12 @@ export default function JumcartApp() {
           type: d.event_type || 'webhook.received',
           provider: 'paystack',
           dest: 'https://httpbin.org/post',
-          epName: 'Payments',
           ts: new Date(d.created_at).getTime(),
           latency: rnd(18, 45),
           status: d.healed ? 'healed' : d.status === 'success' ? 'ok' : 'failed',
           headers: { 'content-type': 'application/json', host: 'gateway.jumcart.com' },
           body: d.payload || {},
-          resp: { code: d.status_code || 200, body: d.response_body || {} },
-          attempts: [{ n: 1, code: d.status_code || 200, text: 'OK', ms: 24, ok: d.status === 'success' }],
-          usd: 350
+          resp: { code: d.status_code || 200, body: d.response_body || {} }
         }));
         setEvents(mapped);
       }
@@ -234,16 +248,12 @@ export default function JumcartApp() {
           type: d.event_type || 'webhook.received',
           provider: 'paystack',
           dest: 'https://httpbin.org/post',
-          epName: 'Payments',
           ts: Date.now(),
           latency: rnd(18, 35),
           status: d.healed ? 'healed' : d.status === 'success' ? 'ok' : 'failed',
           headers: { 'content-type': 'application/json' },
           body: d.payload,
-          resp: { code: d.status_code || 200, body: d.response_body || {} },
-          attempts: [{ n: 1, code: d.status_code || 200, text: 'OK', ms: 24, ok: d.status === 'success' }],
-          usd: 350,
-          fresh: true
+          resp: { code: d.status_code || 200, body: d.response_body || {} }
         };
         setEvents((prev) => [newEv, ...prev].slice(0, 80));
       })
@@ -256,7 +266,6 @@ export default function JumcartApp() {
     };
   }, []);
 
-  // Quick simulate broken webhook directly calling your actual live route
   const simulateLiveBreak = async () => {
     toast('Injecting schema-mismatched webhook into live gateway...', 'info');
     try {
@@ -267,7 +276,7 @@ export default function JumcartApp() {
           event: 'charge.success',
           data: {
             id: `sim_${hex(8)}`,
-            amount: '500000', // string format to trigger repair
+            amount: '500000',
             currency: 'NGN'
           }
         })
@@ -308,33 +317,30 @@ export default function JumcartApp() {
           {/* Navigation Tabs */}
           <nav className="flex gap-2 overflow-x-auto no-scrollbar border-t border-[#1c232d]/40">
             {[
-              { id: 'stream', label: 'Live Stream', icon: Activity },
-              { id: 'endpoints', label: 'Endpoints & Proxies', icon: Zap },
-              { id: 'healing', label: 'Self-Healing AI Logs', icon: Sparkles, count: failedCount },
-              { id: 'replay', label: 'Replay Engine', icon: RotateCcw },
-              { id: 'keys', label: 'Settings & API Keys', icon: Settings }
-            ].map((t) => {
-              const IconComp = t.icon;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id as any)}
-                  className={`inline-flex items-center gap-2 py-3 px-3.5 border-b-2 text-[13.5px] font-medium transition-colors whitespace-nowrap ${
-                    tab === t.id
-                      ? 'border-[#8ea3ff] text-[#e8ecf1]'
-                      : 'border-transparent text-[#8d98a7] hover:text-[#e8ecf1]'
-                  }`}
-                >
-                  <IconComp className="w-4 h-4" />
-                  {t.label}
-                  {t.count ? (
-                    <span className="font-mono text-[10.5px] bg-[#ff6370]/15 text-[#ff6370] rounded px-1.5 py-0.5">
-                      {t.count}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
+              { id: 'stream', label: 'Live Stream', icon: 'activity' },
+              { id: 'endpoints', label: 'Endpoints & Proxies', icon: 'zap' },
+              { id: 'healing', label: 'Self-Healing AI Logs', icon: 'sparkles', count: failedCount },
+              { id: 'replay', label: 'Replay Engine', icon: 'rotateCcw' },
+              { id: 'keys', label: 'Settings & API Keys', icon: 'settings' }
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id as any)}
+                className={`inline-flex items-center gap-2 py-3 px-3.5 border-b-2 text-[13.5px] font-medium transition-colors whitespace-nowrap ${
+                  tab === t.id
+                    ? 'border-[#8ea3ff] text-[#e8ecf1]'
+                    : 'border-transparent text-[#8d98a7] hover:text-[#e8ecf1]'
+                }`}
+              >
+                <Icon name={t.icon} size={15} />
+                {t.label}
+                {t.count ? (
+                  <span className="font-mono text-[10.5px] bg-[#ff6370]/15 text-[#ff6370] rounded px-1.5 py-0.5">
+                    {t.count}
+                  </span>
+                ) : null}
+              </button>
+            ))}
           </nav>
         </div>
       </header>
@@ -396,7 +402,7 @@ export default function JumcartApp() {
                   onClick={simulateLiveBreak}
                   className="inline-flex items-center gap-1.5 text-xs bg-[#141a22] border border-[#2a3340] hover:border-[#5d6877] px-3 py-1.5 rounded font-medium"
                 >
-                  <Zap className="w-3.5 h-3.5 text-[#f2a93b]" /> Simulate Failure
+                  <Icon name="zap" size={13} className="text-[#f2a93b]" /> Simulate Failure
                 </button>
               </div>
             </div>
@@ -434,7 +440,7 @@ export default function JumcartApp() {
                             </span>
                           ) : e.status === 'healed' ? (
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-semibold text-[#4cc9f0] bg-[#4cc9f0]/10">
-                              <Sparkles className="w-3 h-3" /> Healed
+                              <Icon name="sparkles" size={12} /> Healed
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-semibold text-[#ff6370] bg-[#ff6370]/10">
@@ -470,37 +476,35 @@ export default function JumcartApp() {
 
         {/* TAB 2: Endpoints & Proxies */}
         {tab === 'endpoints' && (
-          <div className="grid gap-4">
-            <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
-              <h2 className="font-bold text-base">Your Active Ingestion Proxies</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-[#1c232d] font-mono text-[11px] text-[#5d6877] uppercase">
-                    <tr>
-                      <th className="py-2 px-3">Name</th>
-                      <th className="py-2 px-3">Inbound Drop-in Proxy URL</th>
-                      <th className="py-2 px-3">Forward Destination</th>
-                      <th className="py-2 px-3">Active</th>
+          <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
+            <h2 className="font-bold text-base">Your Active Ingestion Proxies</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-[#1c232d] font-mono text-[11px] text-[#5d6877] uppercase">
+                  <tr>
+                    <th className="py-2 px-3">Name</th>
+                    <th className="py-2 px-3">Inbound Drop-in Proxy URL</th>
+                    <th className="py-2 px-3">Forward Destination</th>
+                    <th className="py-2 px-3">Active</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1c232d] font-mono">
+                  {endpoints.map((ep) => (
+                    <tr key={ep.id}>
+                      <td className="py-3 px-3 font-semibold text-[#e8ecf1] font-sans">{ep.name}</td>
+                      <td className="py-3 px-3 text-[#8ea3ff] select-all font-mono">
+                        https://jumcart-gateway.vercel.app/api/p/{ep.proxy}
+                      </td>
+                      <td className="py-3 px-3 text-[#8d98a7]">{ep.dest}</td>
+                      <td className="py-3 px-3">
+                        <span className="text-[#3ecf8e] bg-[#3ecf8e]/10 px-2 py-0.5 rounded font-sans text-xs">
+                          Active
+                        </span>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1c232d] font-mono">
-                    {endpoints.map((ep) => (
-                      <tr key={ep.id}>
-                        <td className="py-3 px-3 font-semibold text-[#e8ecf1] font-sans">{ep.name}</td>
-                        <td className="py-3 px-3 text-[#8ea3ff] select-all font-mono">
-                          https://jumcart-gateway.vercel.app/api/p/{ep.proxy}
-                        </td>
-                        <td className="py-3 px-3 text-[#8d98a7]">{ep.dest}</td>
-                        <td className="py-3 px-3">
-                          <span className="text-[#3ecf8e] bg-[#3ecf8e]/10 px-2 py-0.5 rounded font-sans text-xs">
-                            Active
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -508,24 +512,21 @@ export default function JumcartApp() {
         {/* TAB 3: Self-Healing AI Logs */}
         {tab === 'healing' && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-base font-bold">Self-Healing Diagnostics</h2>
-                <p className="text-xs text-[#8d98a7]">
-                  Jumcart reads failed payloads, resolves mismatches, and auto-patches schemas on the edge.
-                </p>
-              </div>
+            <div>
+              <h2 className="text-base font-bold">Self-Healing Diagnostics</h2>
+              <p className="text-xs text-[#8d98a7]">
+                Jumcart reads failed payloads, resolves mismatches, and auto-patches schemas on the edge.
+              </p>
             </div>
             <div className="grid gap-4">
               {['schema', 'timeout', 'locked', 'secret'].map((c) => {
                 const d = DIAG[c];
-                const IconComp = d.icon;
                 return (
                   <div key={c} className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded bg-[#8ea3ff]/10 text-[#8ea3ff] grid place-items-center">
-                          <IconComp className="w-4 h-4" />
+                          <Icon name={d.icon} size={15} />
                         </div>
                         <div>
                           <div className="font-bold text-sm">{d.title}</div>
@@ -539,6 +540,13 @@ export default function JumcartApp() {
                     <div className="p-3 bg-[#141a22] rounded border border-[#2a3340] text-xs text-[#e8ecf1]">
                       {d.diagnosis(failedCount || 3)}
                     </div>
+                    <div className="bg-[#090b0f] p-2.5 rounded border border-[#1c232d] font-mono text-xs text-[#8d98a7] space-y-1">
+                      {d.patch.map((line: string, idx: number) => (
+                        <div key={idx} className={line.startsWith('+') ? 'text-[#3ecf8e]' : line.startsWith('-') ? 'text-[#ff6370]' : ''}>
+                          {line}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
@@ -551,11 +559,7 @@ export default function JumcartApp() {
           <div className="bg-[#0e1116] border border-[#1c232d] rounded-lg p-5 space-y-4">
             <h2 className="font-bold text-base">Replay Engine Terminal</h2>
             <div className="bg-[#05070a] border border-[#1c232d] rounded p-4 font-mono text-xs space-y-1">
-              {logs.map((l) => (
-                <div key={l.id} className="text-[#8d98a7]">
-                  {l.t}
-                </div>
-              ))}
+              <div className="text-[#8d98a7]">jumcart-cli 2.4.1 · replay engine ready. Select events and run replay.</div>
               <div className="text-[#8ea3ff]">$ jumcart replay --ready_</div>
             </div>
           </div>
@@ -583,11 +587,8 @@ export default function JumcartApp() {
                 <span className="font-mono text-xs text-[#8d98a7]">{openEv.id}</span>
                 <h3 className="text-lg font-bold font-mono text-[#e8ecf1]">{openEv.type}</h3>
               </div>
-              <button
-                onClick={() => setOpenId(null)}
-                className="p-1 text-[#8d98a7] hover:text-[#e8ecf1] rounded"
-              >
-                <X className="w-5 h-5" />
+              <button onClick={() => setOpenId(null)} className="p-1 text-[#8d98a7] hover:text-[#e8ecf1] rounded">
+                <Icon name="x" size={18} />
               </button>
             </div>
 
@@ -615,7 +616,7 @@ export default function JumcartApp() {
             key={t.id}
             className="pointer-events-auto bg-[#141a22] border border-[#2a3340] shadow-2xl px-4 py-2.5 rounded-lg text-xs font-medium flex items-center gap-2"
           >
-            <Info className="w-4 h-4 text-[#8ea3ff]" />
+            <Icon name="info" size={14} className="text-[#8ea3ff]" />
             <span>{t.msg}</span>
           </div>
         ))}
