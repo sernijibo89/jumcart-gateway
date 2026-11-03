@@ -202,7 +202,6 @@ const hex = (n: number) => Array.from({ length: n }, () => Math.floor(Math.rando
 const digits = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 10).toString()).join('');
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const fmtMs = (ms: number | null) => (ms == null ? '—' : ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : Math.round(ms) + ' ms');
-const money = (n: number) => '$' + Math.round(n).toLocaleString('en-US');
 const clock = (ts: number) => new Date(ts).toLocaleTimeString('en-GB', { hour12: false });
 const ago = (ts: number, now: number) => {
   const s = Math.max(0, Math.round((now - ts) / 1000));
@@ -527,7 +526,7 @@ export default function Page() {
         })));
       }
     } catch {
-      // Fallback cleanly without stopping demo mode
+      // Clean fallback
     }
   };
 
@@ -1593,6 +1592,155 @@ export default function Page() {
             </div>
           </div>
         )}
+
+        {/* PRICING SECTION - Before Footer */}
+        <section className="pt-8 pb-4">
+          <div className="text-center max-w-xl mx-auto mb-8">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[#8ea3ff] bg-[#8ea3ff]/10 px-2.5 py-1 rounded border border-[#8ea3ff]/20">
+              Predictable Usage-Based Pricing
+            </span>
+            <h2 className="text-xl sm:text-2xl font-bold mt-3 tracking-tight">Stop losing transactions. Start in 60 seconds.</h2>
+            <p className="text-xs sm:text-sm text-[#8d98a7] mt-1.5">
+              Net expansion drives naturally as your business processes higher transaction volume.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Starter Plan */}
+            <div className="bg-[#0e1116] border border-[#1c232d] hover:border-[#2a3340] transition rounded-xl p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-mono uppercase text-xs tracking-wider text-[#8d98a7] font-semibold">Starter</h3>
+                </div>
+                <div className="flex items-baseline gap-1 my-3">
+                  <span className="text-3xl font-extrabold text-[#e8ecf1]">$0</span>
+                  <span className="text-xs text-[#5d6877] font-mono">/mo</span>
+                </div>
+                <p className="text-xs text-[#8d98a7] mb-5">For indie devs and testing pipelines before scale.</p>
+                <div className="h-px bg-[#1c232d] mb-5" />
+                <ul className="space-y-3 text-xs text-[#8d98a7]">
+                  <li className="flex items-center gap-2 text-[#e8ecf1]">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>10,000 events / month</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>3-day buffer log retention</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>Standard replay terminal</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>Community support</span>
+                  </li>
+                </ul>
+              </div>
+              <button
+                onClick={() => {
+                  if (!currentUser) setAuthModalOpen(true);
+                  else setTab('endpoints');
+                }}
+                className="mt-6 w-full bg-[#141a22] hover:bg-[#1c232d] border border-[#2a3340] text-xs font-semibold py-2.5 rounded-lg text-[#e8ecf1] transition"
+              >
+                {currentUser ? 'Active Current Plan' : 'Start Free'}
+              </button>
+            </div>
+
+            {/* Growth Plan (Popular) */}
+            <div className="bg-[#0e1116] border-2 border-[#3ecf8e] rounded-xl p-6 flex flex-col justify-between relative shadow-xl shadow-[#3ecf8e]/5">
+              <span className="absolute -top-3 right-6 bg-[#3ecf8e] text-[#04150d] text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+                Popular
+              </span>
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-mono uppercase text-xs tracking-wider text-[#3ecf8e] font-semibold">Growth</h3>
+                </div>
+                <div className="flex items-baseline gap-1 my-3">
+                  <span className="text-3xl font-extrabold text-[#e8ecf1]">$49</span>
+                  <span className="text-xs text-[#5d6877] font-mono">/mo</span>
+                </div>
+                <p className="text-xs text-[#8d98a7] mb-5">For scaling B2B SaaS and high-velocity e-commerce.</p>
+                <div className="h-px bg-[#1c232d] mb-5" />
+                <ul className="space-y-3 text-xs text-[#8d98a7]">
+                  <li className="flex items-center gap-2 text-[#e8ecf1] font-medium">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>250,000 events / month</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-[#e8ecf1]">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>14-day zero-drop buffer</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-[#3ecf8e] font-semibold">
+                    <Icon name="Sparkles" size={14} className="text-[#3ecf8e]" />
+                    <span>Autonomous AI schema healing</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-[#e8ecf1]">
+                    <Icon name="Bell" size={14} className="text-[#3ecf8e]" />
+                    <span>Slack & WhatsApp incident alerts</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>Priority email support</span>
+                  </li>
+                </ul>
+              </div>
+              <button
+                onClick={() => {
+                  if (!currentUser) setAuthModalOpen(true);
+                  else toast('Subscription gateway ready. Contact enquiries@jumcart.com for invoice billing.', 'ok');
+                }}
+                className="mt-6 w-full bg-[#3ecf8e] hover:bg-[#5ddda5] text-[#04150d] text-xs font-bold py-2.5 rounded-lg transition"
+              >
+                Upgrade to Growth
+              </button>
+            </div>
+
+            {/* Scale Plan */}
+            <div className="bg-[#0e1116] border border-[#1c232d] hover:border-[#2a3340] transition rounded-xl p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-mono uppercase text-xs tracking-wider text-[#8d98a7] font-semibold">Scale</h3>
+                </div>
+                <div className="flex items-baseline gap-1 my-3">
+                  <span className="text-3xl font-extrabold text-[#e8ecf1]">$299+</span>
+                  <span className="text-xs text-[#5d6877] font-mono">/mo</span>
+                </div>
+                <p className="text-xs text-[#8d98a7] mb-5">For high-volume FinTechs and regional payment aggregators.</p>
+                <div className="h-px bg-[#1c232d] mb-5" />
+                <ul className="space-y-3 text-xs text-[#8d98a7]">
+                  <li className="flex items-center gap-2 text-[#e8ecf1]">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>Millions of buffered events</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-[#e8ecf1]">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>Dedicated edge IP routing</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-[#8ea3ff]">
+                    <Icon name="ShieldCheck" size={14} className="text-[#8ea3ff]" />
+                    <span>99.99% contract SLA</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-[#e8ecf1]">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>Custom NDPR audit log storage</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Icon name="Check" size={14} className="text-[#3ecf8e]" />
+                    <span>24/7 dedicated escalation channel</span>
+                  </li>
+                </ul>
+              </div>
+              <a
+                href="mailto:enquiries@jumcart.com?subject=Inquiry:%20Scale%20Tier%20Deployment"
+                className="mt-6 w-full text-center bg-[#141a22] hover:bg-[#1c232d] border border-[#2a3340] text-xs font-semibold py-2.5 rounded-lg text-[#e8ecf1] transition block"
+              >
+                Contact Enterprise
+              </a>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Slide-over Event Drawer */}
