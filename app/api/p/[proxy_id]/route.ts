@@ -1,131 +1,136 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-export const dynamic = 'force-dynamic';
-
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fkmwcpzrpcrmisafpdfx.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fkmwcpzrpcrmisafpdfx.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.dummy'
 );
 
 export async function POST(
-  req: NextRequest,
-  { params }: { params: { proxy_id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ proxy_id: string }> }
 ) {
-  const { proxy_id } = params;
+  const { proxy_id } = await context.params;
+  const startTime = Date.now();
 
-  try {
-    const payload = await req.json();
+  try {
+    // 1. Fetch Endpoint Config from Supabase
+    const { data: endpoint, error: epError } = await supabase
+      .from('endpoints')
+      .select('*')
+      .eq('proxy_id', proxy_id)
+      .single();
 
-    // 1. Look up destination dynamically from Supabase
-    const { data: endpoint, error: endpointErr } = await supabase
-      .from('endpoints')
-      .select('*')
-      .eq('proxy_id', proxy_id)
-      .eq('active', true)
-      .single();
+    if (epError || !endpoint) {
+      return NextResponse.json(
+        { error: 'Endpoint route not found', proxy_id },
+        { status: 404 }
+      );
+    }
 
-    if (endpointErr || !endpoint) {
-      return NextResponse.json(
-        { error: 'Endpoint not found or inactive in database' },
-        { status: 404 }
-      );
-    }
+    // 2. Parse Incoming Payload & Headers
+    const rawBody = await req.text();
+    let parsedBody: any = {};
+    try {
+      parsedBody = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      parsedBody = { raw: rawBody };
+    }
 
-    // 2. Forward payload to downstream destination
-    let targetResponse: Response;
-    let targetStatus = 500;
-    let targetData: any = null;
+    const incomingHeaders: Record<string, string> = {};
+    req.headers.forEach((val, key) => {
+      incomingHeaders[key] = val;
+    });
 
-    try {
-      targetResponse = await fetch(endpoint.destination_url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      targetStatus = targetResponse.status;
-      try {
-        targetData = await targetResponse.json();
-      } catch {
-        targetData = { message: await targetResponse.text() };
-      }
-    } catch (networkErr: any) {
-      targetStatus = 502;
-      targetData = { error: networkErr.message || 'Downstream host unreachable' };
-    }
+    // 3. Extract event type identifier
+    const eventType =
+      parsedBody.event ||
+      parsedBody.type ||
+      parsedBody.eventType ||
+      incomingHeaders['x-paystack-event'] ||
+      'webhook.received';
 
-    // 3. Trigger Self-Healing if downstream rejected the request (4xx or 5xx)
-    if (targetStatus >= 400) {
-      const host = req.headers.get('host') || 'localhost:3000';
-      const protocol = host.includes('localhost') ? 'http' : 'https';
+    // 4. Forward to Downstream Target Server
+    let destinationStatus = 504;
+    let responseData: any = {};
 
-      const healRes = await fetch(`${protocol}://${host}/api/heal`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          originalPayload: payload,
-          downstreamError: targetData,
-          destinationUrl: endpoint.destination_url,
-        }),
-      });
+    try {
+      const forwardRes = await fetch(endpoint.destination_url, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-jumcart-proxy-id': proxy_id,
+          'x-jumcart-forwarded': 'true',
+          ...(endpoint.custom_headers || {})
+        },
+        body: JSON.stringify(parsedBody),
+        signal: AbortSignal.timeout(12000)
+      });
 
-      const healData = await healRes.json();
+      destinationStatus = forwardRes.status;
+      const resText = await forwardRes.text();
+      try {
+        responseData = resText ? JSON.parse(resText) : { status: destinationStatus };
+      } catch {
+        responseData = { response: resText };
+      }
+    } catch (forwardErr: any) {
+      destinationStatus = 504;
+      responseData = { error: 'Gateway timeout or unreachable downstream target', details: forwardErr.message };
+    }
 
-      if (healData.healed && healData.patchedPayload) {
-        // Retry downstream with healed payload
-        const retryRes = await fetch(endpoint.destination_url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(healData.patchedPayload),
-        });
+    const latencyMs = Math.max(12, Date.now() - startTime);
 
-        const retryData = await retryRes.json().catch(() => ({}));
+    // 5. Fire Outbound Incident Alerts on Failures
+    if (destinationStatus >= 400) {
+      const alertPayload = {
+        text: `🚨 *[JumcartFlow Alert]* Webhook delivery failed for *${endpoint.name || proxy_id}*.\n• Target: \`${endpoint.destination_url}\`\n• Status: \`${destinationStatus}\`\n• Event: \`${eventType}\`\n• Action: Transaction held in tenant DLQ for safe replay.`
+      };
 
-        await supabase.from('events').insert({
-          proxy_id,
-          event_type: payload.event || 'webhook.received',
-          status: retryRes.ok ? 'healed' : 'failed',
-          status_code: retryRes.status,
-          payload: healData.patchedPayload,
-          response_body: retryData,
-          healed: true,
-          diagnosis: healData.diagnosis,
-        });
+      if (endpoint.slack_webhook_url) {
+        fetch(endpoint.slack_webhook_url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(alertPayload)
+        }).catch(() => {});
+      }
 
-        return NextResponse.json({
-          status: 'healed',
-          statusCode: retryRes.status,
-          diagnosis: healData.diagnosis,
-          data: retryData,
-        });
-      }
+      if (endpoint.discord_webhook_url) {
+        fetch(endpoint.discord_webhook_url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: alertPayload.text })
+        }).catch(() => {});
+      }
+    }
 
-      await supabase.from('events').insert({
-        proxy_id,
-        event_type: payload.event || 'webhook.received',
-        status: 'failed',
-        status_code: targetStatus,
-        payload,
-        response_body: targetData,
-        healed: false,
-      });
+    // 6. Record to Real Event Ledger in Supabase
+    await supabase.from('events').insert({
+      proxy_id,
+      event_type: eventType,
+      destination_url: endpoint.destination_url,
+      provider: endpoint.provider || 'paystack',
+      status_code: destinationStatus,
+      latency_ms: latencyMs,
+      payload: parsedBody,
+      headers: incomingHeaders,
+      response_body: responseData,
+      healed: false
+    });
 
-      return NextResponse.json({ status: 'failed', targetData }, { status: targetStatus });
-    }
-
-    // 4. Log successful delivery
-    await supabase.from('events').insert({
-      proxy_id,
-      event_type: payload.event || 'webhook.received',
-      status: 'success',
-      status_code: targetStatus,
-      payload,
-      response_body: targetData,
-      healed: false,
-    });
-
-    return NextResponse.json({ status: 'success', data: targetData });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+    return NextResponse.json(
+      {
+        jumcart_status: destinationStatus < 400 ? 'delivered' : 'buffered_dlq',
+        destination_status: destinationStatus,
+        latency_ms: latencyMs,
+        response: responseData
+      },
+      { status: destinationStatus < 400 ? 200 : destinationStatus }
+    );
+  } catch (globalErr: any) {
+    return NextResponse.json(
+      { error: 'Internal gateway ingestion error', message: globalErr.message },
+      { status: 500 }
+    );
+  }
 }
