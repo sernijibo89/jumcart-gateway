@@ -51,12 +51,6 @@ function Icon({ name, size = 16, className = '' }: { name: string; size?: number
         <line x1="21" y1="12" x2="9" y2="12" />
       </>
     ),
-    ShieldCheck: (
-      <>
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-        <path d="m9 12 2 2 4-4" />
-      </>
-    ),
     Zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />,
     Edit: (
       <>
@@ -82,12 +76,6 @@ function Icon({ name, size = 16, className = '' }: { name: string; size?: number
       <>
         <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
         <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />
-      </>
-    ),
-    Bell: (
-      <>
-        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
       </>
     ),
     X: (
@@ -150,13 +138,14 @@ export default function DashboardPage() {
   const [newProvider, setNewProvider] = useState('paystack');
   const [creating, setCreating] = useState(false);
 
-  // Multi-Channel Alerts State
+  // Alerts State
   const [alertConfig, setAlertConfig] = useState({
     slackWebhook: '',
     discordWebhook: '',
     notifyOn5xx: true,
     notifyOnHeal: true
   });
+  const [savingAlerts, setSavingAlerts] = useState(false);
 
   const toast = useCallback((msg: string, kind = 'info') => {
     const id = Date.now() + Math.random();
@@ -179,18 +168,14 @@ export default function DashboardPage() {
 
       if (epData && epData.length > 0) {
         setEndpoints(epData);
-      } else {
-        setEndpoints([
-          {
-            id: 'ep_default',
-            proxy_id: 'gonze_live_839201',
-            name: 'Primary Ingestion Gateway',
-            provider: 'paystack',
-            destination_url: 'https://httpbin.org/post',
-            webhook_secret: 'whsec_demo_secret_839201',
-            active: true
-          }
-        ]);
+        // Preload alert webhooks from the primary endpoint
+        const primary = epData[0];
+        setAlertConfig({
+          slackWebhook: primary.slack_webhook_url || '',
+          discordWebhook: primary.discord_webhook_url || '',
+          notifyOn5xx: primary.notify_on_5xx ?? true,
+          notifyOnHeal: primary.notify_on_heal ?? true
+        });
       }
 
       const { data: evData } = await supabase
@@ -213,8 +198,7 @@ export default function DashboardPage() {
         setUser(session.user);
         loadTenantData(session.user.id);
       } else {
-        setUser({ id: 'demo_user', email: 'junt406@gmail.com' });
-        loadTenantData('demo_user');
+        router.push('/');
       }
     });
 
@@ -222,11 +206,13 @@ export default function DashboardPage() {
       if (session?.user) {
         setUser(session.user);
         loadTenantData(session.user.id);
+      } else {
+        router.push('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [loadTenantData]);
+  }, [router, loadTenantData]);
 
   // Live Destination Editor
   const handleSaveDestination = async (epId: string, proxyId: string) => {
@@ -274,34 +260,71 @@ export default function DashboardPage() {
       setEndpoints((prev) =>
         prev.map((e) => (e.proxy_id === proxyId ? { ...e, webhook_secret: newSecret } : e))
       );
-      toast('Webhook secret rotated. Re-sign incoming provider requests.', 'ok');
+      toast('Webhook secret rotated.', 'ok');
     } catch {
       toast('Error rotating secret in database.', 'bad');
     }
   };
 
-  // DLQ Replay Engine
-  const failedEvents = useMemo(() => events.filter((e) => e.status === 'failed' || (e.status_code && e.status_code >= 400 && !e.healed)), [events]);
+  // Real DLQ Replay Engine calling /api/replay
+  const failedEvents = useMemo(() => events.filter((e) => e.status_code >= 400 && !e.healed), [events]);
 
   const handleReplayBatch = async () => {
     if (replaying || failedEvents.length === 0) return;
     setReplaying(true);
-    setReplayLogs(['[DLQ Engine] Initiating replay queue for ' + failedEvents.length + ' failed transactions...']);
+    setReplayLogs(['[DLQ Engine] Initiating live replay for ' + failedEvents.length + ' transactions via /api/replay...']);
 
-    for (const ev of failedEvents) {
-      await new Promise((r) => setTimeout(r, 450));
+    try {
+      const res = await fetch('/api/replay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_ids: failedEvents.map((e) => e.id) })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Replay failed');
+
       setReplayLogs((prev) => [
         ...prev,
-        `Replaying evt_${ev.id.substring(0, 8)} (${ev.event_type}) -> 200 OK delivered (24ms)`
+        `✓ Replay batch processed: ${data.processed} transactions re-forwarded downstream.`
       ]);
-      setEvents((prev) =>
-        prev.map((x) => (x.id === ev.id ? { ...x, status_code: 200, healed: true } : x))
-      );
-    }
 
-    setReplayLogs((prev) => [...prev, 'Replay batch completed. All transactions delivered downstream.']);
-    setReplaying(false);
-    toast('DLQ replayed successfully.', 'ok');
+      if (user) loadTenantData(user.id);
+      toast('Batch replay completed successfully.', 'ok');
+    } catch (err: any) {
+      setReplayLogs((prev) => [...prev, `✗ Replay error: ${err.message}`]);
+      toast(err.message, 'bad');
+    } finally {
+      setReplaying(false);
+    }
+  };
+
+  // Save Real Alert Channels into Database
+  const handleSaveAlerts = async () => {
+    if (endpoints.length === 0) {
+      toast('Provision an endpoint first before configuring alerts.', 'bad');
+      return;
+    }
+    setSavingAlerts(true);
+    try {
+      const primaryProxy = endpoints[0].proxy_id;
+      const { error } = await supabase
+        .from('endpoints')
+        .update({
+          slack_webhook_url: alertConfig.slackWebhook,
+          discord_webhook_url: alertConfig.discordWebhook,
+          notify_on_5xx: alertConfig.notifyOn5xx,
+          notify_on_heal: alertConfig.notifyOnHeal
+        })
+        .eq('proxy_id', primaryProxy);
+
+      if (error) throw error;
+      toast('Alert channels persisted to edge proxy configuration.', 'ok');
+    } catch (err: any) {
+      toast(err.message || 'Failed to update alert dispatchers', 'bad');
+    } finally {
+      setSavingAlerts(false);
+    }
   };
 
   const handleCreateEndpoint = async (e: React.FormEvent) => {
@@ -361,7 +384,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#090b0f] text-[#e8ecf1] font-sans antialiased text-[14px]">
-      {/* Top Navbar */}
       <header className="border-b border-[#1c232d] bg-[#090b0f] sticky top-0 z-30">
         <div className="max-w-[1320px] mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -378,7 +400,7 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex flex-col text-right font-mono text-xs">
-              <span className="text-[#e8ecf1] font-medium">{user?.email || 'junt406@gmail.com'}</span>
+              <span className="text-[#e8ecf1] font-medium">{user?.email}</span>
               <span className="text-[#3ecf8e]">Plan: Starter (Active)</span>
             </div>
             <button
@@ -394,9 +416,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Container */}
       <main className="max-w-[1320px] mx-auto px-4 py-6 space-y-6">
-        {/* Metric Cards Strip */}
         <section className="bg-[#0e1116] border border-[#1c232d] rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <span className="font-mono text-xs uppercase tracking-wider text-[#5d6877]">Monthly Ingestion Buffer</span>
@@ -436,7 +456,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Tab Switcher */}
         <div className="flex flex-wrap border-b border-[#1c232d] gap-5">
           <button
             onClick={() => setActiveTab('endpoints')}
@@ -483,7 +502,6 @@ export default function DashboardPage() {
         {/* TAB 1: ENDPOINTS */}
         {activeTab === 'endpoints' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Create Endpoint Form */}
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-xl p-5 space-y-4">
               <div>
                 <h3 className="font-bold text-sm text-[#e8ecf1]">Provision New Relay Route</h3>
@@ -531,7 +549,6 @@ export default function DashboardPage() {
               </form>
             </div>
 
-            {/* List of Proxies with Health Probe & In-Line Edit */}
             <div className="lg:col-span-2 space-y-4">
               {endpoints.map((ep) => {
                 const isEditing = editingEpId === (ep.id || ep.proxy_id);
@@ -562,7 +579,6 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* Ingestion URL Row */}
                     <div className="space-y-1">
                       <span className="text-[11px] font-mono text-[#5d6877] uppercase">Your Inbound Webhook URL (Paste in Payment Gateway):</span>
                       <div className="flex items-center gap-2">
@@ -579,7 +595,6 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* Forwarding Destination with In-line Edit */}
                     <div className="pt-2 border-t border-[#1c232d] space-y-2">
                       <div className="flex items-center justify-between text-xs font-mono">
                         <span className="text-[#5d6877] uppercase">Downstream Destination:</span>
@@ -624,12 +639,11 @@ export default function DashboardPage() {
                       )}
                     </div>
 
-                    {/* HMAC Secret Management */}
                     <div className="pt-2 border-t border-[#1c232d] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
                       <div className="flex items-center gap-2">
                         <span className="text-[#5d6877]">Secret:</span>
                         <span className="text-[#8ea3ff]">
-                          {showSec ? (ep.webhook_secret || 'whsec_demo_secret_839201') : '••••••••••••••••'}
+                          {showSec ? (ep.webhook_secret || 'whsec_active_key') : '••••••••••••••••'}
                         </span>
                         <button
                           onClick={() => setShowSecretMap((m) => ({ ...m, [ep.proxy_id]: !showSec }))}
@@ -658,7 +672,7 @@ export default function DashboardPage() {
             <div className="p-4 border-b border-[#1c232d] flex justify-between items-center">
               <div>
                 <h3 className="font-bold text-sm text-[#e8ecf1]">Tenant Ingestion Ledger</h3>
-                <p className="text-xs text-[#8d98a7] mt-0.5">Click any transaction to open the Side-by-Side Payload Diff Inspector.</p>
+                <p className="text-xs text-[#8d98a7] mt-0.5">Click any transaction to open the Payload Inspector & Diff Drawer.</p>
               </div>
             </div>
 
@@ -677,8 +691,21 @@ export default function DashboardPage() {
                 <tbody className="divide-y divide-[#1c232d]">
                   {events.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-[#5d6877]">
-                        No webhooks recorded yet. Send a test curl or Paystack ping to record your first transaction.
+                      <td colSpan={6} className="py-12 text-center">
+                        <div className="max-w-md mx-auto space-y-3">
+                          <div className="w-10 h-10 rounded-full bg-[#141a22] border border-[#2a3340] grid place-items-center mx-auto text-[#8ea3ff]">
+                            <Icon name="Webhook" size={18} />
+                          </div>
+                          <div className="font-bold text-sm text-[#e8ecf1]">Awaiting First Incoming Webhook</div>
+                          <p className="text-xs text-[#8d98a7] leading-relaxed">
+                            No transactions have hit your edge routes yet. Paste your ingestion URL into your payment gateway dashboard or send a test curl.
+                          </p>
+                          <div className="p-3 bg-[#090b0f] border border-[#1c232d] rounded text-left font-mono text-[11px] text-[#8ea3ff] overflow-x-auto">
+                            curl -X POST https://www.jumcart.com/api/p/{endpoints[0]?.proxy_id || 'gonze_live_839201'} \<br/>
+                            &nbsp;&nbsp;-H &quot;Content-Type: application/json&quot; \<br/>
+                            &nbsp;&nbsp;-d &apos;{JSON.stringify({ event: 'charge.success', amount: 50000 })}&apos;
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -695,7 +722,7 @@ export default function DashboardPage() {
                             </span>
                           ) : ev.status_code >= 200 && ev.status_code < 300 ? (
                             <span className="text-[#3ecf8e] bg-[#3ecf8e]/10 px-2 py-0.5 rounded text-[11px] font-bold">
-                              200 OK
+                              {ev.status_code} OK
                             </span>
                           ) : (
                             <span className="text-[#ff6370] bg-[#ff6370]/10 px-2 py-0.5 rounded text-[11px] font-bold">
@@ -724,7 +751,7 @@ export default function DashboardPage() {
               <div>
                 <h3 className="font-bold text-sm text-[#e8ecf1]">Zero-Drop Buffer DLQ</h3>
                 <p className="text-xs text-[#8d98a7] mt-1">
-                  Transactions that encountered upstream 5xx crashes or unhandled client timeouts are preserved here.
+                  Transactions that encountered upstream 5xx crashes or target timeouts are held here.
                 </p>
               </div>
 
@@ -761,7 +788,7 @@ export default function DashboardPage() {
                   <div className="text-[#5d6877]">No replay jobs executed. Click Replay to dispatch held events.</div>
                 ) : (
                   replayLogs.map((log, idx) => (
-                    <div key={idx} className={log.includes('200 OK') ? 'text-[#3ecf8e]' : 'text-[#8ea3ff]'}>
+                    <div key={idx} className={log.includes('processed') ? 'text-[#3ecf8e]' : 'text-[#8ea3ff]'}>
                       {log}
                     </div>
                   ))
@@ -777,7 +804,7 @@ export default function DashboardPage() {
             <div>
               <h3 className="font-bold text-sm text-[#e8ecf1]">Incident Alerts & Multi-Channel Dispatchers</h3>
               <p className="text-xs text-[#8d98a7] mt-0.5">
-                Deliver alerts to developer chat channels when upstream payment APIs fail or auto-healing patches deploy.
+                Saved webhook URLs are stored in Supabase and automatically receive alert pings when downstream servers drop requests.
               </p>
             </div>
 
@@ -827,10 +854,11 @@ export default function DashboardPage() {
               </div>
 
               <button
-                onClick={() => toast('Alert channels saved and verified.', 'ok')}
-                className="bg-[#8ea3ff] text-[#0a0d18] font-bold px-4 py-2 rounded text-xs hover:bg-[#a5b6ff] transition"
+                onClick={handleSaveAlerts}
+                disabled={savingAlerts}
+                className="bg-[#8ea3ff] text-[#0a0d18] font-bold px-4 py-2 rounded text-xs hover:bg-[#a5b6ff] disabled:opacity-40 transition"
               >
-                Save Notification Channels
+                {savingAlerts ? 'Persisting to Database...' : 'Save Notification Channels'}
               </button>
             </div>
           </div>
@@ -880,7 +908,7 @@ export default function DashboardPage() {
           <div className="relative w-full max-w-[580px] bg-[#0e1116] border-l border-[#2a3340] h-full overflow-y-auto p-6 space-y-5 z-10">
             <div className="flex items-center justify-between border-b border-[#1c232d] pb-3">
               <div>
-                <span className="font-mono text-xs text-[#8d98a7]">evt_{inspectEvent.id.substring(0, 8)}</span>
+                <span className="font-mono text-xs text-[#8d98a7]">evt_{String(inspectEvent.id).substring(0, 8)}</span>
                 <h3 className="text-base font-bold text-[#e8ecf1]">{inspectEvent.event_type || 'charge.success'}</h3>
               </div>
               <button onClick={() => setInspectEvent(null)} className="p-1 text-[#8d98a7] hover:text-[#e8ecf1]">
@@ -891,7 +919,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-2 text-xs font-mono">
               <div className="p-2.5 bg-[#090b0f] border border-[#1c232d] rounded">
                 <span className="text-[#5d6877] text-[10px] uppercase block">Response Code</span>
-                <span className={inspectEvent.status_code === 200 ? 'text-[#3ecf8e] font-bold' : 'text-[#ff6370] font-bold'}>
+                <span className={inspectEvent.status_code >= 200 && inspectEvent.status_code < 300 ? 'text-[#3ecf8e] font-bold' : 'text-[#ff6370] font-bold'}>
                   {inspectEvent.status_code || 200}
                 </span>
               </div>
@@ -901,7 +929,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Side-by-Side Schema Diff View */}
             <div className="space-y-1">
               <span className="text-[11px] font-mono uppercase text-[#5d6877]">Autonomous Schema Healing Diff</span>
               <div className="bg-[#090b0f] border border-[#1c232d] rounded p-3 text-xs font-mono space-y-1">
@@ -914,19 +941,29 @@ export default function DashboardPage() {
             <div className="space-y-1">
               <span className="text-[11px] font-mono uppercase text-[#5d6877]">Captured Webhook Payload</span>
               <pre className="p-3 bg-[#090b0f] border border-[#1c232d] rounded text-xs font-mono overflow-x-auto text-[#8ea3ff] max-h-[220px]">
-                {JSON.stringify(inspectEvent.payload || { event: 'charge.success', data: { amount: 50000 } }, null, 2)}
+                {JSON.stringify(inspectEvent.payload || {}, null, 2)}
               </pre>
             </div>
 
             <div className="pt-2">
               <button
-                onClick={() => {
-                  toast('Payload re-dispatched to destination.', 'ok');
-                  setInspectEvent(null);
+                onClick={async () => {
+                  try {
+                    await fetch('/api/replay', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ event_ids: [inspectEvent.id] })
+                    });
+                    toast('Payload re-dispatched directly to destination.', 'ok');
+                    setInspectEvent(null);
+                    if (user) loadTenantData(user.id);
+                  } catch {
+                    toast('Replay dispatch error.', 'bad');
+                  }
                 }}
                 className="w-full bg-[#141a22] hover:bg-[#1c232d] border border-[#2a3340] text-xs font-mono font-semibold py-2 rounded text-[#e8ecf1] transition"
               >
-                Re-fire This Payload to Destination &rarr;
+                Re-fire This Payload Downstream &rarr;
               </button>
             </div>
           </div>
