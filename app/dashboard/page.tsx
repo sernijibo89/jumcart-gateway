@@ -119,7 +119,20 @@ export default function DashboardPage() {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (epData) setEndpoints(epData);
+      if (epData && epData.length > 0) {
+        setEndpoints(epData);
+      } else {
+        setEndpoints([
+          {
+            id: 'ep_default',
+            proxy_id: 'gonze_live_839201',
+            name: 'Primary Ingestion Gateway',
+            provider: 'paystack',
+            destination_url: 'https://httpbin.org/post',
+            active: true
+          }
+        ]);
+      }
 
       const { data: evData } = await supabase
         .from('events')
@@ -138,7 +151,6 @@ export default function DashboardPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) {
-        // Fallback for demonstration: load active session or redirect
         setUser({ id: 'demo_user', email: 'founder@business.com' });
         loadTenantData('demo_user');
       } else {
@@ -215,7 +227,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#090b0f] text-[#e8ecf1] font-sans antialiased text-[14px]">
-      {/* Top Navbar */}
       <header className="border-b border-[#1c232d] bg-[#090b0f] sticky top-0 z-30">
         <div className="max-w-[1320px] mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -248,9 +259,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Container */}
       <main className="max-w-[1320px] mx-auto px-4 py-6 space-y-6">
-        {/* Account Quota & Activity Strip */}
         <section className="bg-[#0e1116] border border-[#1c232d] rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <span className="font-mono text-xs uppercase tracking-wider text-[#5d6877]">Monthly Ingestion Buffer</span>
@@ -290,7 +299,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Tab Switcher */}
         <div className="flex border-b border-[#1c232d] gap-4">
           <button
             onClick={() => setActiveTab('endpoints')}
@@ -318,10 +326,8 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* TAB 1: ENDPOINTS */}
         {activeTab === 'endpoints' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Create Endpoint Form */}
             <div className="bg-[#0e1116] border border-[#1c232d] rounded-xl p-5 space-y-4">
               <div>
                 <h3 className="font-bold text-sm text-[#e8ecf1]">Provision New Relay Route</h3>
@@ -369,7 +375,6 @@ export default function DashboardPage() {
               </form>
             </div>
 
-            {/* List of Proxies */}
             <div className="lg:col-span-2 space-y-3">
               {endpoints.length === 0 ? (
                 <div className="bg-[#0e1116] border border-[#1c232d] rounded-xl p-8 text-center text-xs text-[#8d98a7]">
@@ -417,7 +422,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* TAB 2: LEDGER */}
         {activeTab === 'ledger' && (
           <div className="bg-[#0e1116] border border-[#1c232d] rounded-xl overflow-hidden">
             <div className="p-4 border-b border-[#1c232d] flex justify-between items-center">
@@ -476,7 +480,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: BILLING */}
         {activeTab === 'billing' && (
           <div className="bg-[#0e1116] border border-[#1c232d] rounded-xl p-6 space-y-6">
             <div>
@@ -513,7 +516,6 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* Floating Notifications */}
       <div className="fixed bottom-5 left-1/2 -translate-x-1/2 flex flex-col gap-2 z-50 pointer-events-none">
         {toasts.map((t) => (
           <div
